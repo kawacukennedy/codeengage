@@ -33,16 +33,6 @@ A modern, developer-focused web app for saving, sharing, and discovering code sn
 
 ---
 
-## 🌐 Deploying to InfinityFree
-
-1. **Sign up at [InfinityFree](https://infinityfree.net/)** and create a new site (e.g., `codeengage.free.nf`).
-2. **Upload all project files** (except `codeengage.sql`) to the `htdocs` directory using the File Manager or FTP.
-3. **Create a MySQL database** in the InfinityFree control panel.
-4. **Import `codeengage.sql`** into your database using phpMyAdmin.
-5. **Edit `codeengage/includes/db.php`** with your InfinityFree database credentials.
-6. **Visit your live site:** [https://codeengage.free.nf](https://codeengage.free.nf)
-
----
 
 ## 📂 Project Structure
 ```
