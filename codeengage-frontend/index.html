@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CodeEngage - A modern platform for saving, sharing, and discovering code snippets">
+    <meta name="theme-color" content="#1f2937">
+    <title>CodeEngage - Developer Code Snippets Platform</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/logo.svg">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="/src/css/main.css" rel="stylesheet">
+    <link href="/src/css/syntax-highlighting.css" rel="stylesheet">
+    <link href="/src/css/animations.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased">
+    <!-- Header -->
+    <header id="header" class="fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 z-50">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="/" class="flex items-center space-x-2">
+                    <img src="/assets/svg/logo.svg" alt="CodeEngage" class="w-8 h-8">
+                    <span class="text-xl font-semibold text-white">CodeEngage</span>
+                </a>
+            </div>
+            
+            <nav id="main-nav" class="hidden md:flex items-center space-x-6">
+                <a href="/dashboard" class="text-gray-300 hover:text-white transition-colors">Dashboard</a>
+                <a href="/snippets" class="text-gray-300 hover:text-white transition-colors">Explore</a>
+                <a href="/editor" class="text-gray-300 hover:text-white transition-colors">Create</a>
+                <a href="/profile" class="text-gray-300 hover:text-white transition-colors">Profile</a>
+            </nav>
+            
+            <div class="flex items-center space-x-4">
+                <button id="search-trigger" class="p-2 text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </button>
+                
+                <button id="theme-toggle" class="p-2 text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+                
+                <div id="user-menu" class="relative">
+                    <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <img src="https://ui-avatars.com/api/?name=User&background=374151&color=f3f4f6" alt="User" class="w-8 h-8 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <button id="mobile-menu-toggle" class="md:hidden p-2 text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <nav id="mobile-nav" class="md:hidden fixed inset-x-0 top-16 bg-gray-800 border-b border-gray-700 transform -translate-y-full transition-transform z-40">
+        <div class="container mx-auto px-4 py-4 space-y-2">
+            <a href="/dashboard" class="block px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors">Dashboard</a>
+            <a href="/snippets" class="block px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors">Explore</a>
+            <a href="/editor" class="block px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors">Create</a>
+            <a href="/profile" class="block px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors">Profile</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content" class="pt-16 min-h-screen">
+        <!-- Content will be dynamically loaded here -->
+        <div id="app-loading" class="flex items-center justify-center h-96">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <img src="/assets/svg/logo.svg" alt="CodeEngage" class="w-6 h-6">
+                        <span class="text-lg font-semibold">CodeEngage</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">A modern platform for developers to save, share, and discover code snippets.</p>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold mb-3">Product</h3>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="/features" class="hover:text-white">Features</a></li>
+                        <li><a href="/pricing" class="hover:text-white">Pricing</a></li>
+                        <li><a href="/changelog" class="hover:text-white">Changelog</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold mb-3">Resources</h3>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="/docs" class="hover:text-white">Documentation</a></li>
+                        <li><a href="/api" class="hover:text-white">API</a></li>
+                        <li><a href="/examples" class="hover:text-white">Examples</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold mb-3">Community</h3>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="/github" class="hover:text-white">GitHub</a></li>
+                        <li><a href="/discord" class="hover:text-white">Discord</a></li>
+                        <li><a href="/twitter" class="hover:text-white">Twitter</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; 2024 CodeEngage. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Command Palette Modal -->
+    <div id="command-palette" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl mx-4">
+            <div class="p-4 border-b border-gray-700">
+                <input type="text" id="command-search" placeholder="Type a command or search..." 
+                       class="w-full bg-transparent text-white placeholder-gray-400 outline-none">
+            </div>
+            <div id="command-results" class="max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/src/js/app.js"></script>
+    <script src="/src/js/router.js"></script>
+    <script src="/src/js/modules/api/api-client.js"></script>
+    <script src="/src/js/modules/services/shortcut-manager.js"></script>
+    <script src="/src/js/modules/components/notification-system.js"></script>
+    <script src="/src/js/modules/components/command-palette.js"></script>
+</body>
+</html>
