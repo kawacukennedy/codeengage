@@ -13,15 +13,9 @@ use PDO;
 
 class ExportServiceTest extends TestCase
 {
-    private ExportService $exportService;
-    private $mockDb;
-
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->mockDb = $this->createMockPDO();
-        $this->exportService = new ExportService($this->mockDb);
     }
 
     /**
@@ -294,7 +288,8 @@ XML;
     private function generateSafeFilename(string $title): string
     {
         $safe = strtolower($title);
-        $safe = preg_replace('/[^a-z0-9\s-]/', '', $safe);
+        $safe = str_replace(['/', '\\'], '-', $safe);
+        $safe = preg_replace('/[^a-z0-9\s-]/', '-', $safe); // Replace special chars with hyphens
         $safe = preg_replace('/\s+/', '-', $safe);
         $safe = preg_replace('/-+/', '-', $safe);
         return trim($safe, '-');
