@@ -50,9 +50,9 @@ class User
     public function setEmail(string $email): self { $this->email = $email; return $this; }
     public function setPasswordHash(string $hash): self { $this->passwordHash = $hash; return $this; }
     public function setPassword(string $password): self { $this->passwordHash = SecurityHelper::hashPassword($password); return $this; }
-    public function setDisplayName(string $displayName): self { $this->displayName = $displayName; return $this; }
-    public function setAvatarUrl(string $avatarUrl): self { $this->avatarUrl = $avatarUrl; return $this; }
-    public function setBio(string $bio): self { $this->bio = $bio; return $this; }
+    public function setDisplayName(?string $displayName): self { $this->displayName = $displayName; return $this; }
+    public function setAvatarUrl(?string $avatarUrl): self { $this->avatarUrl = $avatarUrl; return $this; }
+    public function setBio(?string $bio): self { $this->bio = $bio; return $this; }
     public function setPreferences(array $preferences): self { $this->preferences = $preferences; return $this; }
     public function setAchievementPoints(int $points): self { $this->achievementPoints = $points; return $this; }
     public function setLastActiveAt(\DateTime $date): self { $this->lastActiveAt = $date; return $this; }
@@ -74,7 +74,7 @@ class User
         
         $stmt = $this->db->prepare($sql);
         
-        return $stmt->execute([
+        $result = $stmt->execute([
             ':username' => $this->username,
             ':email' => $this->email,
             ':password_hash' => $this->passwordHash,
@@ -85,6 +85,12 @@ class User
             ':achievement_points' => $this->achievementPoints ?: 0,
             ':email_verified_at' => $this->emailVerifiedAt?->format('Y-m-d H:i:s')
         ]);
+
+        if ($result) {
+            $this->id = (int) $this->db->lastInsertId();
+        }
+
+        return $result;
     }
 
     private function update(): bool
