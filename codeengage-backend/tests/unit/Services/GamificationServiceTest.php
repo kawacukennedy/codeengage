@@ -13,15 +13,9 @@ use PDO;
 
 class GamificationServiceTest extends TestCase
 {
-    private GamificationService $gamificationService;
-    private $mockDb;
-
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->mockDb = $this->createMockPDO();
-        $this->gamificationService = new GamificationService($this->mockDb);
     }
 
     /**
@@ -118,7 +112,7 @@ class GamificationServiceTest extends TestCase
         $this->assertTrue($isConsecutive, 'Yesterday should be consecutive day');
         
         $lastActiveTwoDaysAgo = strtotime('-2 days');
-        $isConsecutive2 = (strtotime('yesterday') - $lastActiveTwoDaysAgo) <= 86400;
+        $isConsecutive2 = ($today - $lastActiveTwoDaysAgo) <= 86400;
         $this->assertFalse($isConsecutive2, 'Two days ago should break streak');
     }
 
