@@ -1,0 +1,378 @@
+<!-- Admin Dashboard Template -->
+<div class="admin-page">
+    <div class="admin-layout">
+        <!-- Admin Sidebar -->
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="sidebar-header">
+                <h2><span class="icon-shield"></span> Admin Panel</h2>
+            </div>
+
+            <nav class="admin-nav">
+                <button class="nav-item active" data-section="overview">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Overview</span>
+                </button>
+                <button class="nav-item" data-section="users">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Users</span>
+                </button>
+                <button class="nav-item" data-section="snippets">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Snippets</span>
+                </button>
+                <button class="nav-item" data-section="reports">
+                    <span class="nav-icon">🚩</span>
+                    <span class="nav-text">Reports</span>
+                    <span class="badge" id="reports-badge"></span>
+                </button>
+                <button class="nav-item" data-section="audit">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Audit Log</span>
+                </button>
+                <button class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Settings</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Admin Main Content -->
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1 id="admin-title">Dashboard Overview</h1>
+                <div class="admin-actions">
+                    <button class="btn btn-secondary" id="refresh-data">
+                        <span class="icon-refresh"></span> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="admin-content" id="admin-content">
+                <!-- Overview Section -->
+                <section id="overview-section" class="admin-section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon users">👥</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="total-users">0</span>
+                                <span class="stat-label">Total Users</span>
+                                <span class="stat-change positive" id="users-today">+0 today</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon snippets">📝</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="total-snippets">0</span>
+                                <span class="stat-label">Total Snippets</span>
+                                <span class="stat-change positive" id="snippets-today">+0 today</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon views">👁️</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="total-views">0</span>
+                                <span class="stat-label">Total Views</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon active">🟢</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="active-users">0</span>
+                                <span class="stat-label">Active Users (24h)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-grid-columns">
+                        <div class="admin-card">
+                            <h3>Recent Activity</h3>
+                            <div class="activity-list" id="recent-activity">
+                                <p class="empty-state">Loading...</p>
+                            </div>
+                        </div>
+
+                        <div class="admin-card">
+                            <h3>Pending Reports</h3>
+                            <div class="reports-preview" id="pending-reports">
+                                <p class="empty-state">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <h3>System Health</h3>
+                        <div class="health-grid" id="system-health">
+                            <div class="health-item">
+                                <span class="health-indicator good"></span>
+                                <span class="health-label">Database</span>
+                            </div>
+                            <div class="health-item">
+                                <span class="health-indicator good"></span>
+                                <span class="health-label">Cache</span>
+                            </div>
+                            <div class="health-item">
+                                <span class="health-indicator good"></span>
+                                <span class="health-label">API</span>
+                            </div>
+                            <div class="health-item">
+                                <span class="health-indicator good"></span>
+                                <span class="health-label">Storage</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Users Section -->
+                <section id="users-section" class="admin-section hidden">
+                    <div class="section-toolbar">
+                        <input type="search" id="user-search" placeholder="Search users..." class="search-input" />
+                        <select id="user-role-filter" class="filter-select">
+                            <option value="">All Roles</option>
+                            <option value="admin">Admin</option>
+                            <option value="user">User</option>
+                        </select>
+                        <select id="user-status-filter" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table" id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Joined</th>
+                                    <th>Last Active</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination" id="users-pagination">
+                        <!-- Pagination controls -->
+                    </div>
+                </section>
+
+                <!-- Snippets Section -->
+                <section id="snippets-section" class="admin-section hidden">
+                    <div class="section-toolbar">
+                        <input type="search" id="snippet-search" placeholder="Search snippets..."
+                            class="search-input" />
+                        <select id="snippet-visibility-filter" class="filter-select">
+                            <option value="">All Visibility</option>
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                        </select>
+                        <select id="snippet-status-filter" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="reported">Reported</option>
+                            <option value="flagged">Flagged</option>
+                        </select>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table" id="snippets-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Language</th>
+                                    <th>Visibility</th>
+                                    <th>Views</th>
+                                    <th>Stars</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="snippets-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Reports Section -->
+                <section id="reports-section" class="admin-section hidden">
+                    <div class="reports-tabs">
+                        <button class="tab-btn active" data-filter="pending">Pending</button>
+                        <button class="tab-btn" data-filter="resolved">Resolved</button>
+                        <button class="tab-btn" data-filter="dismissed">Dismissed</button>
+                    </div>
+
+                    <div class="reports-list" id="reports-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Audit Log Section -->
+                <section id="audit-section" class="admin-section hidden">
+                    <div class="section-toolbar">
+                        <input type="date" id="audit-from" class="date-input" />
+                        <input type="date" id="audit-to" class="date-input" />
+                        <select id="audit-action-filter" class="filter-select">
+                            <option value="">All Actions</option>
+                            <option value="create">Create</option>
+                            <option value="update">Update</option>
+                            <option value="delete">Delete</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                        </select>
+                        <button class="btn btn-secondary" id="export-audit">Export CSV</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table" id="audit-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settings-section" class="admin-section hidden">
+                    <form id="admin-settings-form">
+                        <div class="settings-group">
+                            <h3>General Settings</h3>
+
+                            <div class="form-group">
+                                <label for="site-name">Site Name</label>
+                                <input type="text" id="site-name" name="site_name" value="CodeEngage" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="site-description">Site Description</label>
+                                <textarea id="site-description" name="site_description"
+                                    rows="2">Save, share, and discover code snippets</textarea>
+                            </div>
+
+                            <div class="form-group checkbox">
+                                <label>
+                                    <input type="checkbox" name="maintenance_mode" />
+                                    Enable Maintenance Mode
+                                </label>
+                            </div>
+
+                            <div class="form-group checkbox">
+                                <label>
+                                    <input type="checkbox" name="registration_enabled" checked />
+                                    Allow New User Registration
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3>Limits & Quotas</h3>
+
+                            <div class="form-group">
+                                <label for="max-snippet-size">Max Snippet Size (KB)</label>
+                                <input type="number" id="max-snippet-size" name="max_snippet_size" value="1024" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="rate-limit">API Rate Limit (requests/hour)</label>
+                                <input type="number" id="rate-limit" name="rate_limit" value="1000" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="max-snippets-per-user">Max Snippets Per User</label>
+                                <input type="number" id="max-snippets-per-user" name="max_snippets_per_user"
+                                    value="0" />
+                                <span class="help-text">Set to 0 for unlimited</span>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                            <button type="button" class="btn btn-secondary" id="reset-settings">Reset to
+                                Defaults</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- User Edit Modal -->
+<div class="modal" id="user-edit-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit User</h3>
+            <button class="modal-close" data-close>&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="user-edit-form">
+                <input type="hidden" id="edit-user-id" name="user_id" />
+
+                <div class="form-group">
+                    <label for="edit-display-name">Display Name</label>
+                    <input type="text" id="edit-display-name" name="display_name" />
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-email">Email</label>
+                    <input type="email" id="edit-email" name="email" />
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-role">Role</label>
+                    <select id="edit-role" name="role">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div class="form-group checkbox">
+                    <label>
+                        <input type="checkbox" name="is_suspended" id="edit-suspended" />
+                        Suspended
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-close>Cancel</button>
+            <button class="btn btn-primary" id="save-user-btn">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Report Review Modal -->
+<div class="modal" id="report-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Review Report</h3>
+            <button class="modal-close" data-close>&times;</button>
+        </div>
+        <div class="modal-body" id="report-modal-body">
+            <!-- Report details loaded here -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-danger" id="report-delete">Delete Content</button>
+            <button class="btn btn-warning" id="report-warn">Warn User</button>
+            <button class="btn btn-secondary" id="report-dismiss">Dismiss</button>
+        </div>
+    </div>
+</div>
