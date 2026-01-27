@@ -2,7 +2,7 @@
 
 // Database migration script
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/MigrationRunner.php';
+require_once __DIR__ . '/../migrations/MigrationRunner.php';
 
 try {
     // Create database connection
@@ -14,7 +14,7 @@ try {
     $db = new PDO($dsn, $config['user'], $config['pass'], $options);
 
     // Run migrations
-    $runner = new MigrationRunner($db, __DIR__);
+    $runner = new MigrationRunner($db, __DIR__ . '/../migrations');
     
     $command = $argv[1] ?? 'run';
     

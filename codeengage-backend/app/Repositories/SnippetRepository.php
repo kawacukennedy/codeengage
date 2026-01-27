@@ -58,7 +58,7 @@ class SnippetRepository
         return $this->findById($snippet->getId());
     }
 
-    public function update(int $id, array $data, ?string $code = null, int $editorId = null): Snippet
+    public function update(int $id, array $data, $code = null, $editorId = null): Snippet
     {
         $snippet = $this->findById($id);
         if (!$snippet) {
@@ -530,5 +530,187 @@ class SnippetRepository
         $sql = "DELETE FROM snippet_tags WHERE snippet_id = :snippet_id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([':snippet_id' => $snippetId]);
+    }
+
+    public function findAllWithFilters(array $filters, string $sort, int $limit, int $offset): array
+    {
+        return $this->findMany($filters, $limit, $offset);
+    }
+
+    public function countWithFilters(array $filters): int
+    {
+        return $this->count($filters);
+    }
+
+    public function fullTextSearch(string $query, array $filters, string $sort, int $limit, int $offset): array
+    {
+        $sql = "
+            SELECT s.*, 
+                   MATCH(s.title, s.description) AGAINST(:query IN NATURAL LANGUAGE MODE) as relevance_score,
+                   sv.code as latest_code,
+                   sv.analysis_results as latest_analysis
+            FROM snippets s
+            LEFT JOIN snippet_versions sv ON s.id = sv.snippet_id 
+            WHERE s.deleted_at IS NULL
+            AND MATCH(s.title, s.description) AGAINST(:query IN NATURAL LANGUAGE MODE) > 0
+        ";
+        
+        $params = [':query' => $query];
+        
+        // Apply filters
+        if (!empty($filters['language'])) {
+            $sql .= " AND s.language = :language";
+            $params[':language'] = $filters['language'];
+        }
+        
+        if (!empty($filters['tags'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['tags']), '?'));
+            $sql .= " AND EXISTS (
+                SELECT 1 FROM snippet_tags st 
+                JOIN tags t ON st.tag_id = t.id 
+                WHERE st.snippet_id = s.id AND t.slug IN ($placeholders)
+            )";
+            $params = array_merge($params, $filters['tags']);
+        }
+        
+        // Order by relevance and sort
+        $sql .= " ORDER BY relevance_score DESC";
+        if ($sort === 'recent') {
+            $sql .= ", s.created_at DESC";
+        } elseif ($sort === 'popular') {
+            $sql .= ", s.star_count DESC";
+        }
+        
+        $sql .= " LIMIT :limit OFFSET :offset";
+        $params[':limit'] = $limit;
+        $params[':offset'] = $offset;
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        
+        $results = [];
+        while ($data = $stmt->fetch()) {
+            $snippet = Snippet::fromData($this->db, $data);
+            $results[] = $snippet->toArray() + [
+                'latest_version' => [
+                    'code' => $data['latest_code'],
+                    'analysis_results' => json_decode($data['latest_analysis'] ?? '{}', true)
+                ],
+                'relevance_score' => $data['relevance_score']
+            ];
+        }
+        
+        return $results;
+    }
+
+    public function fullTextSearchCount(string $query, array $filters): int
+    {
+        $sql = "
+            SELECT COUNT(*) as total
+            FROM snippets s
+            WHERE s.deleted_at IS NULL
+            AND MATCH(s.title, s.description) AGAINST(:query IN NATURAL LANGUAGE MODE) > 0
+        ";
+        
+        $params = [':query' => $query];
+        
+        // Apply filters
+        if (!empty($filters['language'])) {
+            $sql .= " AND s.language = :language";
+            $params[':language'] = $filters['language'];
+        }
+        
+        if (!empty($filters['tags'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['tags']), '?'));
+            $sql .= " AND EXISTS (
+                SELECT 1 FROM snippet_tags st 
+                JOIN tags t ON st.tag_id = t.id 
+                WHERE st.snippet_id = s.id AND t.slug IN ($placeholders)
+            )";
+            $params = array_merge($params, $filters['tags']);
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        
+        return (int)$stmt->fetch()['total'];
+    }
+
+    public function findByLanguage(string $language, int $limit = 20): array
+    {
+        $filters = ['language' => $language];
+        return $this->findMany($filters, $limit);
+    }
+
+    public function findByTags(array $tagSlugs, int $limit = 20): array
+    {
+        $filters = ['tags' => $tagSlugs];
+        return $this->findMany($filters, $limit);
+    }
+
+    public function findByConcept(string $concept, array $filters, int $limit): array
+    {
+        $sql = "
+            SELECT DISTINCT s.* 
+            FROM snippets s
+            LEFT JOIN snippet_versions sv ON s.id = sv.snippet_id
+            WHERE s.deleted_at IS NULL
+            AND (LOWER(s.title) LIKE LOWER(:concept) 
+                 OR LOWER(s.description) LIKE LOWER(:concept)
+                 OR LOWER(sv.code) LIKE LOWER(:concept))
+        ";
+        
+        $params = [':concept' => "%{$concept}%"];
+        
+        if (!empty($filters['language'])) {
+            $sql .= " AND s.language = :language";
+            $params[':language'] = $filters['language'];
+        }
+        
+        $sql .= " LIMIT :limit";
+        $params[':limit'] = $limit;
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        
+        $results = [];
+        while ($data = $stmt->fetch()) {
+            $results[] = Snippet::fromData($this->db, $data);
+        }
+        
+        return $results;
+    }
+
+    public function findTrending(string $timeframe, int $limit): array
+    {
+        $sql = "
+            SELECT s.*, 
+                   (s.view_count * 0.3 + s.star_count * 0.7) as trending_score,
+                   sv.code as latest_code,
+                   sv.analysis_results as latest_analysis
+            FROM snippets s
+            LEFT JOIN snippet_versions sv ON s.id = sv.snippet_id 
+            WHERE s.deleted_at IS NULL
+            AND s.created_at >= DATE_SUB(NOW(), INTERVAL {$timeframe})
+            ORDER BY trending_score DESC, s.created_at DESC
+            LIMIT :limit
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':limit' => $limit]);
+        
+        $results = [];
+        while ($data = $stmt->fetch()) {
+            $snippet = Snippet::fromData($this->db, $data);
+            $results[] = $snippet->toArray() + [
+                'latest_version' => [
+                    'code' => $data['latest_code'],
+                    'analysis_results' => json_decode($data['latest_analysis'] ?? '{}', true)
+                ],
+                'trending_score' => $data['trending_score']
+            ];
+        }
+        
+        return $results;
     }
 }

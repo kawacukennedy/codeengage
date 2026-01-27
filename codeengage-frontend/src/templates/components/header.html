@@ -1,0 +1,73 @@
+<header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+    <nav class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+                <a href="#/dashboard" class="flex items-center space-x-2 text-white hover:text-blue-400 transition-colors">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+                    </svg>
+                    <span class="text-xl font-bold">CodeEngage</span>
+                </a>
+                
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#/snippets" class="text-gray-300 hover:text-white transition-colors">Snippets</a>
+                    <a href="#/dashboard" class="text-gray-300 hover:text-white transition-colors">Dashboard</a>
+                    <a href="#/explore" class="text-gray-300 hover:text-white transition-colors">Explore</a>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button id="command-palette-trigger" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                
+                <button id="theme-toggle" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+                
+                <button id="notifications-toggle" class="relative text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full hidden"></span>
+                </button>
+                
+                <div class="relative group">
+                    <button id="user-menu-toggle" class="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+                        <img id="user-avatar" src="https://picsum.photos/seed/user/32/32.jpg" alt="User" class="w-8 h-8 rounded-full">
+                        <span id="user-name" class="hidden md:block">User</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    
+                    <div id="user-menu" class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg hidden group-hover:block">
+                        <a href="#/profile" class="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Profile</a>
+                        <a href="#/settings" class="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Settings</a>
+                        <a href="#/admin" id="admin-link" class="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white hidden">Admin</a>
+                        <hr class="my-1 border-gray-700">
+                        <button id="logout-btn" class="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Logout</button>
+                    </div>
+                </div>
+                
+                <button id="mobile-menu-toggle" class="md:hidden text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div id="mobile-menu" class="hidden md:hidden mt-4 pt-4 border-t border-gray-800">
+            <div class="flex flex-col space-y-2">
+                <a href="#/snippets" class="text-gray-300 hover:text-white transition-colors py-2">Snippets</a>
+                <a href="#/dashboard" class="text-gray-300 hover:text-white transition-colors py-2">Dashboard</a>
+                <a href="#/explore" class="text-gray-300 hover:text-white transition-colors py-2">Explore</a>
+            </div>
+        </div>
+    </nav>
+</header>

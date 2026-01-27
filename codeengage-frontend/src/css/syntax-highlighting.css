@@ -1,0 +1,393 @@
+/* Syntax Highlighting CSS for CodeEngage */
+
+/* Base code styles */
+pre {
+    @apply bg-gray-950 text-gray-300 font-mono text-sm leading-relaxed overflow-x-auto;
+}
+
+code {
+    @apply font-mono text-sm;
+}
+
+/* Line numbers */
+.line-number {
+    @apply text-gray-600 mr-4 select-none user-select-none;
+}
+
+/* JavaScript/TypeScript Syntax Highlighting */
+.token.comment {
+    @apply text-gray-500 italic;
+}
+
+.token.keyword {
+    @apply text-purple-400 font-medium;
+}
+
+.token.string {
+    @apply text-green-400;
+}
+
+.token.template-string {
+    @apply text-green-400;
+}
+
+.token.template-punctuation {
+    @apply text-green-400;
+}
+
+.token.number {
+    @apply text-cyan-400;
+}
+
+.token.boolean {
+    @apply text-cyan-400;
+}
+
+.token.null {
+    @apply text-cyan-400;
+}
+
+.token.undefined {
+    @apply text-cyan-400;
+}
+
+.token.function {
+    @apply text-blue-400;
+}
+
+.token.class-name {
+    @apply text-yellow-400 font-medium;
+}
+
+.token.variable {
+    @apply text-gray-300;
+}
+
+.token.property {
+    @apply text-gray-300;
+}
+
+.token.operator {
+    @apply text-pink-400;
+}
+
+.token.punctuation {
+    @apply text-gray-400;
+}
+
+.token.regex {
+    @apply text-orange-400;
+}
+
+.token.attr-name {
+    @apply text-yellow-400;
+}
+
+.token.attr-value {
+    @apply text-green-400;
+}
+
+.token.tag {
+    @apply text-blue-400 font-medium;
+}
+
+.token.entity {
+    @apply text-blue-400;
+}
+
+.token.url {
+    @apply text-blue-400 underline;
+}
+
+.token.selector {
+    @apply text-blue-400;
+}
+
+.token.inserted {
+    @apply text-green-400 bg-green-900/20;
+}
+
+.token.deleted {
+    @apply text-red-400 bg-red-900/20;
+}
+
+/* PHP Syntax Highlighting */
+.php .token.variable {
+    @apply text-blue-400;
+}
+
+.php .token.keyword {
+    @apply text-purple-400 font-medium;
+}
+
+.php .token.string {
+    @apply text-green-400;
+}
+
+.php .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.php .token.class-name {
+    @apply text-yellow-400 font-medium;
+}
+
+.php .token.function {
+    @apply text-blue-400;
+}
+
+.php .token.constant {
+    @apply text-cyan-400;
+}
+
+/* Python Syntax Highlighting */
+.python .token.keyword {
+    @apply text-purple-400 font-medium;
+}
+
+.python .token.string {
+    @apply text-green-400;
+}
+
+.python .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.python .token.function {
+    @apply text-blue-400;
+}
+
+.python .token.class-name {
+    @apply text-yellow-400 font-medium;
+}
+
+.python .token.operator {
+    @apply text-pink-400;
+}
+
+.python .token.builtin {
+    @apply text-cyan-400;
+}
+
+/* HTML Syntax Highlighting */
+.html .token.tag {
+    @apply text-blue-400 font-medium;
+}
+
+.html .token.attr-name {
+    @apply text-yellow-400;
+}
+
+.html .token.attr-value {
+    @apply text-green-400;
+}
+
+.html .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.html .token.doctype {
+    @apply text-purple-400 font-medium;
+}
+
+/* CSS Syntax Highlighting */
+.css .token.selector {
+    @apply text-blue-400;
+}
+
+.css .token.property {
+    @apply text-gray-300;
+}
+
+.css .token.value {
+    @apply text-green-400;
+}
+
+.css .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.css .token.atrule {
+    @apply text-purple-400 font-medium;
+}
+
+.css .token.important {
+    @apply text-red-400 font-medium;
+}
+
+/* SQL Syntax Highlighting */
+.sql .token.keyword {
+    @apply text-purple-400 font-medium uppercase;
+}
+
+.sql .token.string {
+    @apply text-green-400;
+}
+
+.sql .token.number {
+    @apply text-cyan-400;
+}
+
+.sql .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.sql .token.function {
+    @apply text-blue-400;
+}
+
+.sql .token.operator {
+    @apply text-pink-400;
+}
+
+/* Java Syntax Highlighting */
+.java .token.keyword {
+    @apply text-purple-400 font-medium;
+}
+
+.java .token.string {
+    @apply text-green-400;
+}
+
+.java .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.java .token.class-name {
+    @apply text-yellow-400 font-medium;
+}
+
+.java .token.function {
+    @apply text-blue-400;
+}
+
+.java .token.annotation {
+    @apply text-orange-400;
+}
+
+.java .token.type {
+    @apply text-cyan-400;
+}
+
+/* C++ Syntax Highlighting */
+.cpp .token.keyword {
+    @apply text-purple-400 font-medium;
+}
+
+.cpp .token.string {
+    @apply text-green-400;
+}
+
+.cpp .token.comment {
+    @apply text-gray-500 italic;
+}
+
+.cpp .token.function {
+    @apply text-blue-400;
+}
+
+.cpp .token.preprocessor {
+    @apply text-orange-400;
+}
+
+.cpp .token.type {
+    @apply text-cyan-400;
+}
+
+/* Diff Highlighting */
+.diff-added {
+    @apply bg-green-900/20 text-green-400;
+}
+
+.diff-removed {
+    @apply bg-red-900/20 text-red-400;
+}
+
+.diff-changed {
+    @apply bg-yellow-900/20 text-yellow-400;
+}
+
+.diff-header {
+    @apply text-gray-500 font-medium;
+}
+
+/* Code Editor Specific Styles */
+.code-editor {
+    @apply bg-gray-950 text-gray-300;
+}
+
+.code-editor .line {
+    @apply min-h-6;
+}
+
+.code-editor .line:hover {
+    @apply bg-gray-800/50;
+}
+
+.code-editor .line.selected {
+    @apply bg-blue-900/30;
+}
+
+.code-editor .cursor {
+    @apply bg-white w-0.5 h-5 absolute;
+}
+
+.code-editor .selection {
+    @apply bg-blue-500/30;
+}
+
+/* Scrollbar Styles */
+pre::-webkit-scrollbar {
+    @apply h-2;
+}
+
+pre::-webkit-scrollbar-track {
+    @apply bg-gray-800;
+}
+
+pre::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+}
+
+/* Focus Styles */
+pre:focus-within {
+    @apply ring-2 ring-blue-500 ring-opacity-50;
+}
+
+/* Responsive Code */
+@media (max-width: 768px) {
+    pre {
+        @apply text-xs;
+    }
+    
+    .line-number {
+        @apply mr-2 text-xs;
+    }
+}
+
+/* Print Styles */
+@media print {
+    pre {
+        @apply text-black bg-white;
+    }
+    
+    .line-number {
+        @apply text-gray-400;
+    }
+    
+    .token.keyword {
+        @apply text-purple-600;
+    }
+    
+    .token.string {
+        @apply text-green-600;
+    }
+    
+    .token.comment {
+        @apply text-gray-500;
+    }
+}

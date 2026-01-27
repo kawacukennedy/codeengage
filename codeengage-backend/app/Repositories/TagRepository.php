@@ -346,4 +346,33 @@ class TagRepository
         }
         return $tags;
     }
+
+    public function searchByName(string $query, int $limit = 10): array
+    {
+        $sql = "
+            SELECT * FROM tags 
+            WHERE deleted_at IS NULL 
+            AND name LIKE :query 
+            ORDER BY usage_count DESC, name ASC 
+            LIMIT :limit
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':query' => "%{$query}%",
+            ':limit' => $limit
+        ]);
+        
+        $tags = [];
+        while ($data = $stmt->fetch()) {
+            $tags[] = Tag::fromData($this->db, $data)->toArray();
+        }
+        
+        return $tags;
+    }
+
+    public function findPopular(int $limit = 20): array
+    {
+        return $this->getPopularTags($limit);
+    }
 }

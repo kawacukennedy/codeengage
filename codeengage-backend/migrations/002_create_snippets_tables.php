@@ -31,7 +31,7 @@ class Migration_002_create_snippets_tables
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 deleted_at TIMESTAMP NULL,
                 FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
-                
+                FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
                 FOREIGN KEY (forked_from_id) REFERENCES snippets(id) ON DELETE SET NULL,
                 INDEX idx_snippets_author (author_id, created_at DESC),
                 INDEX idx_snippets_language (language, created_at DESC),

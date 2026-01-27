@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snippet Viewer - CodeEngage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/src/css/main.css">
+    <link rel="stylesheet" href="/src/css/syntax-highlighting.css">
+</head>
+<body class="h-full bg-gray-900 text-gray-100">
+    <div id="app" class="h-full flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-bold text-white">React Hook Example</h2>
+                    <span class="px-3 py-1 text-sm font-medium bg-green-500 text-white rounded">Public</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 text-gray-400 hover:text-white" title="Copy Code">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-white" title="Download">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-white" title="Share">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.732 2.684m4.732-2.684a3 3 0 00-4.732-2.684M3 12a3 3 0 104.732 2.684M3 12a3 3 0 014.732-2.684"></path>
+                        </svg>
+                    </button>
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Fork
+                    </button>
+                    <button class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                        </svg>
+                        Star
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex">
+            <!-- Code Display -->
+            <main class="flex-1 flex flex-col">
+                <!-- Code Info Bar -->
+                <div class="bg-gray-800 border-b border-gray-700 px-6 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-6 text-sm text-gray-400">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                </svg>
+                                JavaScript
+                            </span>
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                </svg>
+                                42 lines
+                            </span>
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                2 hours ago
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button class="text-sm text-gray-400 hover:text-white">Run in Sandbox</button>
+                            <button class="text-sm text-gray-400 hover:text-white">Embed</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Code Content -->
+                <div class="flex-1 overflow-auto">
+                    <div class="bg-gray-950">
+                        <pre class="p-6 text-sm text-gray-300 font-mono leading-relaxed"><code><span class="line-number text-gray-600 mr-4">1</span><span class="token keyword">import</span> <span class="token punctuation">{</span> useState<span class="token punctuation">,</span> useEffect<span class="token punctuation">,</span> useCallback <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">'react'</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">2</span>
+<span class="line-number text-gray-600 mr-4">3</span><span class="token comment">/**</span>
+<span class="line-number text-gray-600 mr-4">4</span><span class="token comment"> * Custom hook for managing API data with loading and error states</span>
+<span class="line-number text-gray-600 mr-4">5</span><span class="token comment"> * @param {string} url - API endpoint to fetch data from</span>
+<span class="line-number text-gray-600 mr-4">6</span><span class="token comment"> * @param {Object} options - Fetch options</span>
+<span class="line-number text-gray-600 mr-4">7</span><span class="token comment"> * @returns {Object} - Data, loading state, error state, and refetch function</span>
+<span class="line-number text-gray-600 mr-4">8</span><span class="token comment"> */</span>
+<span class="line-number text-gray-600 mr-4">9</span><span class="token keyword">const</span> <span class="token function">useApiData</span> <span class="token operator">=</span> <span class="token punctuation">(</span>url<span class="token punctuation">,</span> options <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">10</span>  <span class="token keyword">const</span> <span class="token punctuation">[</span>data<span class="token punctuation">,</span> setData<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">useState</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">11</span>  <span class="token keyword">const</span> <span class="token punctuation">[</span>loading<span class="token punctuation">,</span> setLoading<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">useState</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">12</span>  <span class="token keyword">const</span> <span class="token punctuation">[</span>error<span class="token punctuation">,</span> setError<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">useState</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">13</span>
+<span class="line-number text-gray-600 mr-4">14</span>  <span class="token keyword">const</span> <span class="token function">fetchData</span> <span class="token operator">=</span> <span class="token function">useCallback</span><span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">15</span>    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">16</span>      <span class="token function">setLoading</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">17</span>      <span class="token function">setError</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">18</span>
+<span class="line-number text-gray-600 mr-4">19</span>      <span class="token keyword">const</span> response <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token function">fetch</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">20</span>        method<span class="token punctuation">:</span> <span class="token string">'GET'</span><span class="token punctuation">,</span>
+<span class="line-number text-gray-600 mr-4">21</span>        headers<span class="token punctuation">:</span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">22</span>          <span class="token string">'Content-Type'</span><span class="token punctuation">:</span> <span class="token string">'application/json'</span><span class="token punctuation">,</span>
+<span class="line-number text-gray-600 mr-4">23</span>          <span class="token punctuation">...</span>options<span class="token punctuation">.</span>headers<span class="token punctuation">,</span>
+<span class="line-number text-gray-600 mr-4">24</span>        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+<span class="line-number text-gray-600 mr-4">25</span>        <span class="token punctuation">...</span>options<span class="token punctuation">,</span>
+<span class="line-number text-gray-600 mr-4">26</span>      <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">27</span>
+<span class="line-number text-gray-600 mr-4">28</span>      <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>response<span class="token punctuation">.</span>ok<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">29</span>        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">HTTP error! status: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>response<span class="token punctuation">.</span>status<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">30</span>      <span class="token punctuation">}</span>
+<span class="line-number text-gray-600 mr-4">31</span>
+<span class="line-number text-gray-600 mr-4">32</span>      <span class="token keyword">const</span> result <span class="token operator">=</span> <span class="token keyword">await</span> response<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">33</span>      <span class="token function">setData</span><span class="token punctuation">(</span>result<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">34</span>    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span>err<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">35</span>      <span class="token function">setError</span><span class="token punctuation">(</span>err<span class="token punctuation">.</span>message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">36</span>    <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">37</span>      <span class="token function">setLoading</span><span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">38</span>    <span class="token punctuation">}</span>
+<span class="line-number text-gray-600 mr-4">39</span>  <span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">[</span>url<span class="token punctuation">,</span> options<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">40</span>
+<span class="line-number text-gray-600 mr-4">41</span>  <span class="token function">useEffect</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+<span class="line-number text-gray-600 mr-4">42</span>    <span class="token function">fetchData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">43</span>  <span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">[</span>fetchData<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">44</span>
+<span class="line-number text-gray-600 mr-4">45</span>  <span class="token keyword">return</span> <span class="token punctuation">{</span> data<span class="token punctuation">,</span> loading<span class="token punctuation">,</span> error<span class="token punctuation">,</span> refetch<span class="token punctuation">:</span> fetchData <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">46</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="line-number text-gray-600 mr-4">47</span>
+<span class="line-number text-gray-600 mr-4">48</span><span class="token keyword">export</span> <span class="token keyword">default</span> useApiData<span class="token punctuation">;</span></code></pre>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Right Sidebar -->
+            <aside class="w-80 bg-gray-800 border-l border-gray-700">
+                <!-- Author Info -->
+                <div class="p-4 border-b border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span class="text-sm font-medium">JD</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-white">John Doe</h4>
+                            <p class="text-xs text-gray-400">2 hours ago</p>
+                        </div>
+                        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                            Follow
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Tabs -->
+                <div class="border-b border-gray-700">
+                    <nav class="flex">
+                        <button class="flex-1 px-4 py-2 text-sm font-medium text-white border-b-2 border-blue-500">
+                            Info
+                        </button>
+                        <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white">
+                            Versions
+                        </button>
+                        <button class="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white">
+                            Comments
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- Tab Content -->
+                <div class="p-4 space-y-6">
+                    <!-- Description -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400 mb-2">Description</h4>
+                        <p class="text-sm text-gray-300">A custom React hook for managing API data with built-in loading and error states. Perfect for fetching data in components with automatic re-fetching capabilities.</p>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400 mb-2">Tags</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">javascript</span>
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">react</span>
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">hooks</span>
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">api</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Statistics -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400 mb-2">Statistics</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Views</span>
+                                <span class="text-gray-300">1,234</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Stars</span>
+                                <span class="text-gray-300">42</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Forks</span>
+                                <span class="text-gray-300">8</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Copies</span>
+                                <span class="text-gray-300">156</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Analysis -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400 mb-2">Code Analysis</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Complexity</span>
+                                <span class="text-green-400">Low</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Security</span>
+                                <span class="text-green-400">Safe</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Performance</span>
+                                <span class="text-yellow-400">Good</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Related Snippets -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400 mb-2">Related Snippets</h4>
+                        <div class="space-y-2">
+                            <a href="#" class="block p-2 bg-gray-700 rounded hover:bg-gray-600">
+                                <p class="text-sm text-white">useState Hook Example</p>
+                                <p class="text-xs text-gray-400">JavaScript • 1 day ago</p>
+                            </a>
+                            <a href="#" class="block p-2 bg-gray-700 rounded hover:bg-gray-600">
+                                <p class="text-sm text-white">API Client with Axios</p>
+                                <p class="text-xs text-gray-400">JavaScript • 3 days ago</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+    
+    <script type="module" src="/src/js/pages/snippet-viewer.js"></script>
+</body>
+</html>

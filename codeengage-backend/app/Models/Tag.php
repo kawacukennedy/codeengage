@@ -176,4 +176,16 @@ class Tag
         
         return $tag;
     }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'description' => $this->description,
+            'usage_count' => $this->usageCount,
+            'created_at' => $this->createdAt ? $this->createdAt->format('Y-m-d H:i:s') : null
+        ];
+    }
 }

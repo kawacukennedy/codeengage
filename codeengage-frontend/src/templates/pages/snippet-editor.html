@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snippet Editor - CodeEngage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/src/css/main.css">
+    <link rel="stylesheet" href="/src/css/syntax-highlighting.css">
+</head>
+<body class="h-full bg-gray-900 text-gray-100">
+    <div id="app" class="h-full flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-bold text-white">Snippet Editor</h2>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="collaborateBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        Collaborate
+                    </button>
+                    <button id="saveBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V2"></path>
+                        </svg>
+                        Save
+                    </button>
+                    <button id="runBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Run
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Editor Layout -->
+        <div class="flex-1 flex">
+            <!-- Left Sidebar - File Tree -->
+            <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+                <div class="p-4 border-b border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-400">Files</h3>
+                </div>
+                <div class="flex-1 p-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center p-2 bg-gray-700 rounded cursor-pointer">
+                            <svg class="w-4 h-4 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                            </svg>
+                            <span class="text-sm">main.js</span>
+                        </div>
+                        <div class="flex items-center p-2 hover:bg-gray-700 rounded cursor-pointer">
+                            <svg class="w-4 h-4 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="text-sm">README.md</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Editor Area -->
+            <main class="flex-1 flex flex-col">
+                <!-- Editor Toolbar -->
+                <div class="bg-gray-800 border-b border-gray-700 px-4 py-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <select id="languageSelect" class="bg-gray-700 text-gray-200 px-3 py-1 rounded border border-gray-600">
+                                <option value="javascript">JavaScript</option>
+                                <option value="php">PHP</option>
+                                <option value="python">Python</option>
+                                <option value="java">Java</option>
+                                <option value="cpp">C++</option>
+                                <option value="html">HTML</option>
+                                <option value="css">CSS</option>
+                                <option value="sql">SQL</option>
+                            </select>
+                            <button class="p-2 text-gray-400 hover:text-white" title="Format Code">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                                </svg>
+                            </button>
+                            <button class="p-2 text-gray-400 hover:text-white" title="Toggle Word Wrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-2 text-sm text-gray-400">
+                            <span>Line 1, Col 1</span>
+                            <span>•</span>
+                            <span>UTF-8</span>
+                            <span>•</span>
+                            <span>JavaScript</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Code Editor -->
+                <div class="flex-1 relative">
+                    <textarea id="codeEditor" class="absolute inset-0 w-full h-full bg-gray-900 text-gray-100 font-mono text-sm p-4 resize-none focus:outline-none" placeholder="// Start typing your code here...
+
+function example() {
+    console.log('Hello, CodeEngage!');
+}"></textarea>
+                    <div class="absolute top-4 right-4 flex flex-col space-y-2">
+                        <button class="p-2 bg-gray-800 rounded text-gray-400 hover:text-white">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                        <button class="p-2 bg-gray-800 rounded text-gray-400 hover:text-white">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Right Sidebar - Properties -->
+            <aside class="w-80 bg-gray-800 border-l border-gray-700">
+                <div class="p-4 border-b border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-400">Properties</h3>
+                </div>
+                <div class="p-4 space-y-6">
+                    <!-- Title -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Title</label>
+                        <input type="text" id="snippetTitle" class="w-full bg-gray-700 text-gray-200 px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="Enter snippet title...">
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                        <textarea id="snippetDescription" rows="3" class="w-full bg-gray-700 text-gray-200 px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="Describe your snippet..."></textarea>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Tags</label>
+                        <input type="text" id="snippetTags" class="w-full bg-gray-700 text-gray-200 px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="javascript, react, hooks">
+                        <p class="mt-1 text-xs text-gray-500">Separate tags with commas</p>
+                    </div>
+                    
+                    <!-- Visibility -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Visibility</label>
+                        <select id="snippetVisibility" class="w-full bg-gray-700 text-gray-200 px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                            <option value="organization">Organization</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Template Variables -->
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="isTemplate" class="mr-2 bg-gray-700 border-gray-600 text-blue-600 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-400">Template</span>
+                        </label>
+                        <div id="templateVariables" class="mt-2 hidden">
+                            <textarea rows="4" class="w-full bg-gray-700 text-gray-200 px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="Variable:Description&#10;name:User name&#10;email:User email"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Results -->
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-400 mb-2">Code Analysis</h4>
+                        <div id="analysisResults" class="space-y-2">
+                            <div class="p-3 bg-gray-700 rounded">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-300">Complexity</span>
+                                    <span class="text-sm font-medium text-green-400">Low</span>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-gray-700 rounded">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-300">Security Issues</span>
+                                    <span class="text-sm font-medium text-green-400">None</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+    
+    <script type="module" src="/src/js/pages/snippet-editor.js"></script>
+</body>
+</html>

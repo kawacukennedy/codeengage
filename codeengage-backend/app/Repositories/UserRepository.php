@@ -374,52 +374,6 @@ return $stmt->fetchAll(PDO::FETCH_ASSOC);
         return (int) $stmt->fetchColumn();
     }
 
-    public function getVersionsSince(int $snippetId, string $sinceDate): array
-    {
-        $sql = "
-            SELECT * FROM snippet_versions 
-            WHERE snippet_id = :snippet_id AND created_at >= :since_date
-            ORDER BY created_at DESC
-        ";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':snippet_id' => $snippetId,
-            ':since_date' => $sinceDate
-        ]);
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-}
-
-    public function getUserRoles(int $userId): array
-    {
-        $sql = "
-            SELECT r.name, r.description 
-            FROM roles r 
-            JOIN user_roles ur ON r.id = ur.role_id 
-            WHERE ur.user_id = :user_id
-        ";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':user_id' => $userId]);
-        
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
-
-    public function getUserPermissions(int $userId): array
-    {
-        $sql = "
-            SELECT DISTINCT p.name 
-            FROM permissions p 
-            JOIN role_permissions rp ON p.id = rp.permission_id 
-            JOIN user_roles ur ON rp.role_id = ur.role_id 
-            WHERE ur.user_id = :user_id
-        ";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':user_id' => $userId]);
-        
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
-
     public function getRecentLoginAttempts(string $ipAddress, int $timeWindowSeconds = 300): array
     {
         $sql = "
@@ -437,62 +391,47 @@ return $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function recordLoginAttempt(array $attemptData): bool
+    public function searchByDisplayName(string $query, int $limit = 10): array
     {
         $sql = "
-            INSERT INTO login_attempts (
-                user_id, ip_address, user_agent, success, attempt_time
-            ) VALUES (
-                :user_id, :ip_address, :user_agent, :success, :attempt_time
-            )
+            SELECT * FROM users 
+            WHERE deleted_at IS NULL 
+            AND (username LIKE :query OR display_name LIKE :query)
+            ORDER BY achievement_points DESC, username ASC 
+            LIMIT :limit
         ";
         
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
-            ':user_id' => $attemptData['user_id'] ?? null,
-            ':ip_address' => $attemptData['ip_address'],
-            ':user_agent' => $attemptData['user_agent'] ?? null,
-            ':success' => $attemptData['success'] ?? false,
-            ':attempt_time' => $attemptData['attempt_time'] ?? date('Y-m-d H:i:s')
-        ]);
-    }
-
-    public function getTotalAchievementPoints(): int
-    {
-        $sql = "SELECT SUM(achievement_points) FROM users WHERE deleted_at IS NULL";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
-        
-        return (int) $stmt->fetchColumn();
-    }
-
-    public function getActiveUsersCount(int $days): int
-    {
-        $sql = "
-            SELECT COUNT(DISTINCT id) 
-            FROM users 
-            WHERE last_active_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
-            AND deleted_at IS NULL
-        ";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':days' => $days]);
-        
-        return (int) $stmt->fetchColumn();
-    }
-
-    public function getVersionsSince(int $snippetId, string $sinceDate): array
-    {
-        $sql = "
-            SELECT * FROM snippet_versions 
-            WHERE snippet_id = :snippet_id AND created_at >= :since_date
-            ORDER BY created_at DESC
-        ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            ':snippet_id' => $snippetId,
-            ':since_date' => $sinceDate
+            ':query' => "%{$query}%",
+            ':limit' => $limit
         ]);
         
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $users = [];
+        while ($data = $stmt->fetch()) {
+            $user = User::fromData($this->db, $data);
+            $users[] = $user->toArray();
+        }
+        
+        return $users;
+    }
+
+    public function findByPasswordResetToken(string $token): ?array
+    {
+        $sql = "
+            SELECT u.* FROM users u
+            JOIN audit_logs al ON u.id = al.entity_id
+            WHERE al.action_type = 'password_reset'
+            AND JSON_EXTRACT(al.new_values, '$.token') = :token
+            AND JSON_EXTRACT(al.new_values, '$.expiry') > NOW()
+            ORDER BY al.created_at DESC
+            LIMIT 1
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':token' => $token]);
+        $data = $stmt->fetch();
+        
+        return $data ? User::fromData($this->db, $data)->toArray() : null;
     }
 }

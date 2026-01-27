@@ -73,7 +73,11 @@ class MigrationRunner
         $migrations = [];
 
         foreach ($files as $file) {
-            $migrations[] = basename($file, '.php');
+            $filename = basename($file, '.php');
+            // Skip MigrationRunner itself
+            if ($filename !== 'MigrationRunner') {
+                $migrations[] = $filename;
+            }
         }
 
         sort($migrations);
@@ -83,7 +87,7 @@ class MigrationRunner
     private function runMigration(string $migrationName): void
     {
         require_once $this->migrationsPath . '/' . $migrationName . '.php';
-        $className = str_replace('-', '_', $migrationName);
+        $className = 'Migration_' . str_replace('-', '_', $migrationName);
 
         if (class_exists($className)) {
             $migration = new $className($this->db);
@@ -99,7 +103,7 @@ class MigrationRunner
     private function rollbackMigration(string $migrationName): void
     {
         require_once $this->migrationsPath . '/' . $migrationName . '.php';
-        $className = str_replace('-', '_', $migrationName);
+        $className = 'Migration_' . str_replace('-', '_', $migrationName);
 
         if (class_exists($className)) {
             $migration = new $className($this->db);
