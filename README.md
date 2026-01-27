@@ -89,6 +89,11 @@ codeengage/
    ```
 
 3. **Frontend Setup**
+    - [x] Project Structure
+    - [x] Core Modules (Router, Auth, API Client)
+    - [x] Pages (Dashboard, Snippets, Profile, Admin)
+    - [x] HTML Templates
+    - [x] Unit Tests
    ```bash
    cd codeengage-frontend
    
@@ -98,7 +103,6 @@ codeengage/
    # Start development server
    npm run dev
    # Or serve with any static server
-   python -m http.server 3000
    ```
 
 4. **Database Setup**
@@ -256,11 +260,39 @@ npm run preview                      # Preview production build
 # Backend tests
 ./vendor/bin/phpunit
 
-# Frontend tests
-npm test
+## 💻 Frontend Development
 
-# Integration tests
-npm run test:e2e
+The frontend is built with vanilla JavaScript, HTML, and CSS, following a component-based architecture without heavy frameworks.
+
+### Structure
+
+- `src/js/app.js`: Main entry point
+- `src/js/modules/`: Core modules (Router, Auth, API Client, Editor)
+- `src/js/pages/`: Page components (Dashboard, Snippets, Profile, Admin)
+- `src/js/utils/`: Utility functions
+- `src/templates/`: HTML templates for pages
+- `src/css/`: Styles including Tailwind-like utility classes
+
+### Running Locally
+
+1.  Navigate to the `codeengage-frontend` directory.
+2.  Install dependencies (optional, for development tools):
+    ```bash
+    npm install
+    ```
+3.  Start the development server:
+    ```bash
+    npm start
+    ```
+4.  Open `http://localhost:3000` (or the port shown) in your browser.
+
+### Running Tests
+
+To run the frontend unit tests:
+
+```bash
+npm test
+```
 ```
 
 ## 📊 Monitoring
@@ -290,7 +322,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Fonts**: Inter & Fira Mono
 - **Database**: MySQL 8.0
 - **Backend**: PHP 8.0
-- **Frontend**: Vanilla JavaScript (ES6+)
+- **Frontend**: Vanilla JavaScript (ES Modules), HTML5, CSS3 (Utility-first)
 
 ## 📞 Support
 
