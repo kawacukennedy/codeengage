@@ -18,19 +18,65 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@700&display=swap"
         rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind CSS (CDN for Development/Preview to support all utility classes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter Variable', 'Inter', 'ui-sans-serif', 'system-ui'],
+                        'mono': ['JetBrains Mono Variable', 'JetBrains Mono', 'Fira Mono', 'monospace'],
+                        'display': ['Plus Jakarta Sans', 'Inter', 'system-ui']
+                    },
+                    colors: {
+                        'deep-space': '#0B0F19',
+                        'neon-blue': '#00F0FF',
+                        'neon-purple': '#7000FF',
+                        'glass-surface': 'rgba(31, 41, 55, 0.5)',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
     <script type="module" src="src/js/app.js" defer></script>
 </head>
 
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased">
+<body
+    class="bg-deep-space text-gray-100 font-sans antialiased selection:bg-neon-purple selection:text-white overflow-hidden">
 
     <!-- Application Container -->
     <div id="app">
         <!-- Loading State -->
-        <div class="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <div class="fixed inset-0 flex items-center justify-center bg-deep-space z-50">
+            <div class="relative w-24 h-24">
+                <div class="absolute inset-0 border-t-4 border-neon-blue rounded-full animate-spin"></div>
+                <div class="absolute inset-2 border-b-4 border-neon-purple rounded-full animate-spin-reverse"></div>
+            </div>
         </div>
     </div>
 
