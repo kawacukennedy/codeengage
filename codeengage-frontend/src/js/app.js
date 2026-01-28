@@ -13,6 +13,7 @@ import { Snippets } from './pages/snippets.js';
 import { Profile } from './pages/profile.js';
 import { Admin } from './pages/admin.js';
 import { CodeEditor as Editor } from './modules/editor.js';
+import { SnippetViewer } from './pages/snippet-viewer.js';
 
 class App {
     constructor() {
@@ -55,6 +56,11 @@ class App {
 
         this.router.add('/snippets', async () => {
             this.currentPage = new Snippets(this);
+            await this.currentPage.init();
+        }, { protected: true });
+
+        this.router.add('/snippet/:id', async (params) => {
+            this.currentPage = new SnippetViewer(this, params.id);
             await this.currentPage.init();
         }, { protected: true });
 
@@ -102,32 +108,68 @@ class App {
     renderLogin() {
         const container = document.getElementById('app');
         container.innerHTML = `
-            <div class="auth-page">
-                <div class="auth-card animate-fadeIn">
-                    <div class="auth-header">
-                        <div class="logo-icon">
-                            <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            <div class="min-h-screen flex bg-deep-space md:overflow-hidden">
+                <!-- Visual Side -->
+                <div class="hidden md:flex w-1/2 relative items-center justify-center p-12 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-radial from-neon-purple/20 to-transparent opacity-50"></div>
+                    <div class="absolute -top-40 -left-40 w-96 h-96 bg-neon-blue rounded-full blur-[128px] opacity-20 animate-pulse-slow"></div>
+                    <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-neon-purple rounded-full blur-[128px] opacity-20 animate-pulse-slow" style="animation-delay: 1s"></div>
+                    
+                    <div class="relative z-10 max-w-lg text-center">
+                         <div class="mb-8 relative group">
+                            <div class="absolute inset-0 bg-gradient-to-r from-neon-blue to-neon-purple blur-xl opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                            <div class="glass-strong p-6 rounded-2xl border border-white/10 transform rotate-[-2deg] group-hover:rotate-0 transition duration-500">
+                                <pre class="text-left text-sm font-mono text-gray-300"><code><span class="text-neon-purple">async function</span> <span class="text-neon-blue">innovate</span>() {
+  <span class="text-neon-purple">await</span> CodeEngage.connect();
+  <span class="text-gray-500">// Build the future</span>
+  <span class="text-neon-purple">return</span> <span class="text-green-400">true</span>;
+}</code></pre>
+                            </div>
                         </div>
-                        <h1>Welcome Back</h1>
-                        <p>Sign in to continue to CodeEngage</p>
+                        <h2 class="text-4xl font-bold text-white mb-4 tracking-tight">Welcome Back</h2>
+                        <p class="text-lg text-gray-400 leading-relaxed">Return to your collaborative workspace and continue building amazing things.</p>
                     </div>
-                    <form id="login-form">
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" name="email" placeholder="name@company.com" required>
+                </div>
+
+                <!-- Form Side -->
+                <div class="w-full lg:w-1/2 lg:ml-auto flex items-center justify-center p-4 md:p-8 relative min-h-screen">
+                    <div class="absolute inset-0 bg-[url('/assets/svg/grid-pattern.svg')] opacity-5"></div>
+                    <!-- Mobile Background Elements -->
+                    <div class="lg:hidden absolute top-0 right-0 w-64 h-64 bg-neon-purple/20 rounded-full blur-[80px]"></div>
+                    <div class="lg:hidden absolute bottom-0 left-0 w-64 h-64 bg-neon-blue/20 rounded-full blur-[80px]"></div>
+                    
+                    <div class="w-full max-w-md glass p-6 md:p-10 rounded-3xl relative z-10 animate-fade-in mx-auto">
+                        <div class="mb-8 text-center md:text-left">
+                            <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue/20 to-neon-purple/20 text-neon-blue mb-4">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                            </div>
+                            <h1 class="text-2xl font-bold text-white mb-2">Sign In</h1>
+                            <p class="text-gray-400">Enter your credentials to access your account.</p>
                         </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" placeholder="••••••••" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <span>Sign In</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                        </button>
-                        <div class="auth-footer">
-                            <p>Don't have an account? <a href="/register">Create account</a></p>
-                        </div>
-                    </form>
+
+                        <form id="login-form" class="space-y-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-300">Email Address</label>
+                                <input type="email" name="email" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none" placeholder="name@company.com" required>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-sm font-medium text-gray-300">Password</label>
+                                    <a href="#" class="text-sm text-neon-blue hover:text-neon-purple transition-colors">Forgot password?</a>
+                                </div>
+                                <input type="password" name="password" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none" placeholder="••••••••" required>
+                            </div>
+                            
+                            <button type="submit" class="w-full btn-primary rounded-xl py-3.5 font-semibold text-white shadow-neon transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                Sign In
+                            </button>
+
+                            <p class="text-center text-sm text-gray-400">
+                                Don't have an account? 
+                                <a href="/register" class="text-neon-blue font-medium hover:text-neon-purple transition-colors">Create account</a>
+                            </p>
+                        </form>
+                    </div>
                 </div>
             </div>
         `;
@@ -163,48 +205,121 @@ class App {
     renderRegister() {
         const container = document.getElementById('app');
         container.innerHTML = `
-            <div class="auth-page">
-                <div class="auth-card animate-fadeIn">
-                    <div class="auth-header">
-                        <div class="logo-icon">
-                            <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+            <div class="min-h-screen flex bg-deep-space md:overflow-hidden">
+                <!-- Visual Side -->
+                <div class="hidden md:flex w-1/2 relative items-center justify-center p-12 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-radial from-neon-blue/20 to-transparent opacity-50"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/5 rounded-full animate-[spin_60s_linear_infinite]"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-neon-purple/20 rounded-full animate-[spin_40s_linear_infinite_reverse]"></div>
+                    
+                    <div class="relative z-10 max-w-lg text-center">
+                         <div class="mb-8 flex justify-center">
+                            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-neon-blue to-neon-purple p-0.5 transform rotate-3 hover:rotate-6 transition duration-300">
+                                <div class="w-full h-full bg-gray-900 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                </div>
+                            </div>
                         </div>
-                        <h1>Create Account</h1>
-                        <p>Join the community of developers</p>
+                        <h2 class="text-4xl font-bold text-white mb-4 tracking-tight">Join the Revolution</h2>
+                        <p class="text-lg text-gray-400 leading-relaxed">Collaborate with thousands of developers building the future of software.</p>
                     </div>
-                    <form id="register-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Username</label>
-                                <input type="text" name="username" placeholder="johndoe" required>
+                </div>
+
+                <!-- Form Side -->
+                <div class="w-full lg:w-1/2 lg:ml-auto flex items-center justify-center p-4 md:p-8 relative min-h-screen overflow-y-auto">
+                    <!-- Mobile Background Elements -->
+                    <div class="lg:hidden absolute top-0 right-0 w-64 h-64 bg-neon-purple/20 rounded-full blur-[80px]"></div>
+
+                    <div class="w-full max-w-md glass p-6 md:p-10 rounded-3xl relative z-10 animate-fade-in my-10 mx-auto">
+                        <div class="mb-8">
+                            <h1 class="text-2xl font-bold text-white mb-2">Create Account</h1>
+                            <p class="text-gray-400">Start your coding journey today.</p>
+                        </div>
+
+                        <form id="register-form" class="space-y-5">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-gray-300">Username</label>
+                                    <input type="text" name="username" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none" placeholder="johndoe" required>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-gray-300">Full Name</label>
+                                    <input type="text" name="name" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none" placeholder="John Doe">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input type="text" name="name" placeholder="John Doe">
+
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-300">Email Address</label>
+                                <input type="email" name="email" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none" placeholder="name@company.com" required>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" name="email" placeholder="name@company.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" placeholder="Create a strong password" required>
-                            <small style="font-size: 0.8rem; color: var(--color-gray-400); margin-top: 0.5rem; display: block; line-height: 1.4;">
-                                Requires 8+ chars and at least one Uppercase, Lowercase, and Number.
-                            </small>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <span>Create Account</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        </button>
-                        <div class="auth-footer">
-                            <p>Already have an account? <a href="/login">Sign in</a></p>
-                        </div>
-                    </form>
+                            
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-300">Password</label>
+                                <div class="relative">
+                                    <input type="password" id="register-password" name="password" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all outline-none" placeholder="Create a strong password" required>
+                                    <div class="mt-2 h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                                        <div id="password-strength" class="h-full bg-gray-600 w-0 transition-all duration-300"></div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 flex justify-between">
+                                    <span>Must include uppercase, lowercase, and number.</span>
+                                    <span id="strength-text" class="hidden font-medium"></span>
+                                </p>
+                            </div>
+                            
+                            <button type="submit" class="w-full btn-primary rounded-xl py-3.5 font-semibold text-white shadow-neon transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                Create Account
+                            </button>
+
+                            <p class="text-center text-sm text-gray-400">
+                                Already have an account? 
+                                <a href="/login" class="text-neon-blue font-medium hover:text-neon-purple transition-colors">Sign in</a>
+                            </p>
+                        </form>
+                    </div>
                 </div>
             </div>
         `;
+
+        // Password Strength Meter Logic
+        const passwordInput = document.getElementById('register-password');
+        const strengthBar = document.getElementById('password-strength');
+        const strengthText = document.getElementById('strength-text');
+
+        passwordInput?.addEventListener('input', (e) => {
+            const val = e.target.value;
+            let strength = 0;
+            let checks = {
+                length: val.length >= 8,
+                hasUpper: /[A-Z]/.test(val),
+                hasLower: /[a-z]/.test(val),
+                hasNumber: /[0-9]/.test(val),
+                hasSpecial: /[^A-Za-z0-9]/.test(val)
+            };
+
+            if (checks.length) strength += 20;
+            if (checks.hasUpper) strength += 20;
+            if (checks.hasLower) strength += 20;
+            if (checks.hasNumber) strength += 20;
+            if (checks.hasSpecial) strength += 20;
+
+            strengthBar.style.width = `${strength}%`;
+
+            if (strength <= 20) {
+                strengthBar.className = 'h-full bg-red-500 w-0 transition-all duration-300';
+                strengthText.textContent = 'Weak';
+                strengthText.className = 'font-medium text-red-500';
+            } else if (strength <= 60) {
+                strengthBar.className = 'h-full bg-yellow-500 w-0 transition-all duration-300';
+                strengthText.textContent = 'Medium';
+                strengthText.className = 'font-medium text-yellow-500';
+            } else {
+                strengthBar.className = 'h-full bg-green-500 w-0 transition-all duration-300';
+                strengthText.textContent = 'Strong';
+                strengthText.className = 'font-medium text-green-500';
+            }
+            strengthBar.style.width = `${strength}%`; // Re-apply width after class change
+        });
 
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -217,7 +332,7 @@ class App {
 
             try {
                 button.disabled = true;
-                button.innerHTML = '<div class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>';
+                button.innerHTML = '<div class="flex items-center justify-center"><div class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div></div>';
 
                 // Send username, email, password, and map name to display_name
                 const result = await this.auth.register({
