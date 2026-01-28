@@ -1,65 +1,64 @@
 <?php
 
-// Database migration script
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../migrations/MigrationRunner.php';
+require_once __DIR__ . '/../public/index.php'; // Bootstrap to load env and config
+
+echo "Starting migrations...\n";
+
+// Get DB connection
+$databaseConfig = require __DIR__ . '/../config/database.php';
+$dsn = "mysql:host={$databaseConfig['host']};charset={$databaseConfig['charset']}"; // Connect without DB first to create it
+$options = $databaseConfig['options'];
 
 try {
-    // Create database connection
-    $config = include __DIR__ . '/../config/database.php';
+    $pdo = new PDO($dsn, $databaseConfig['user'], $databaseConfig['pass'], $options);
     
-    $dsn = "mysql:host={$config['host']};dbname={$config['name']};charset={$config['charset']}";
-    $options = $config['options'];
+    // Create database if not exists
+    $dbName = $databaseConfig['name'];
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    echo "Database '$dbName' checked/created.\n";
     
-    $db = new PDO($dsn, $config['user'], $config['pass'], $options);
+    // Select database
+    $pdo->exec("USE `$dbName`");
+    
+    // Create migrations table
+    $pdo->exec("CREATE TABLE IF NOT EXISTS migrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        migration VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
 
-    // Run migrations
-    $runner = new MigrationRunner($db, __DIR__ . '/../migrations');
+    // Get applied migrations
+    $stm = $pdo->query("SELECT migration FROM migrations");
+    $applied = $stm->fetchAll(PDO::FETCH_COLUMN);
     
-    $command = $argv[1] ?? 'run';
+    // Get migration files
+    $files = glob(__DIR__ . '/../migrations/*.php');
+    sort($files);
     
-    switch ($command) {
-        case 'run':
-            echo "Running migrations...\n";
-            $results = $runner->run();
-            foreach ($results as $result) {
-                echo $result . "\n";
-            }
-            break;
+    foreach ($files as $file) {
+        $name = basename($file);
+        
+        if (in_array($name, $applied)) {
+            echo "Skipping $name (already applied)\n";
+            continue;
+        }
+        
+        echo "Migrating $name... ";
+        $migration = require $file;
+        
+        if (is_callable($migration)) {
+            $migration($pdo);
             
-        case 'rollback':
-            $steps = (int)($argv[2] ?? 1);
-            echo "Rolling back {$steps} migration(s)...\n";
-            $results = $runner->rollback($steps);
-            foreach ($results as $result) {
-                echo $result . "\n";
-            }
-            break;
-            
-        case 'status':
-            $status = $runner->status();
-            echo "Migration Status:\n";
-            echo "Total Available: {$status['total_available']}\n";
-            echo "Total Executed: {$status['total_executed']}\n";
-            echo "Total Pending: {$status['total_pending']}\n";
-            
-            if (!empty($status['pending'])) {
-                echo "\nPending Migrations:\n";
-                foreach ($status['pending'] as $migration) {
-                    echo "  - {$migration}\n";
-                }
-            }
-            break;
-            
-        default:
-            echo "Usage: php migrate.php [run|rollback|status] [steps]\n";
-            echo "  run      - Run all pending migrations\n";
-            echo "  rollback - Rollback N migrations (default: 1)\n";
-            echo "  status   - Show migration status\n";
-            break;
+            $stmt = $pdo->prepare("INSERT INTO migrations (migration) VALUES (?)");
+            $stmt->execute([$name]);
+            echo "DONE\n";
+        } else {
+            echo "FAILED (Not callable)\n";
+        }
     }
     
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
-    exit(1);
+    echo "All migrations completed successfully.\n";
+    
+} catch (PDOException $e) {
+    die("DB Error: " . $e->getMessage() . "\n");
 }
