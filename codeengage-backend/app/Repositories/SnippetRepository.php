@@ -411,9 +411,9 @@ class SnippetRepository
 
     public function softDelete(int $id): bool
     {
-        $sql = "UPDATE snippets SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id";
+        $sql = "UPDATE snippets SET deleted_at = ? WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([':id' => $id]);
+        return $stmt->execute([date('Y-m-d H:i:s'), ':id' => $id]);
     }
 
     public function isStarredByUser(int $snippetId, int $userId): bool
@@ -605,14 +605,25 @@ class SnippetRepository
 
     public function fullTextSearchCount(string $query, array $filters): int
     {
-        $sql = "
-            SELECT COUNT(*) as total
-            FROM snippets s
-            WHERE s.deleted_at IS NULL
-            AND MATCH(s.title, s.description) AGAINST(:query IN NATURAL LANGUAGE MODE) > 0
-        ";
+        $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         
-        $params = [':query' => $query];
+        if ($driver === 'sqlite') {
+            $sql = "
+                SELECT COUNT(*) as total
+                FROM snippets s
+                WHERE s.deleted_at IS NULL
+                AND (s.title LIKE :query OR s.description LIKE :query)
+            ";
+            $params = [':query' => "%{$query}%"];
+        } else {
+            $sql = "
+                SELECT COUNT(*) as total
+                FROM snippets s
+                WHERE s.deleted_at IS NULL
+                AND MATCH(s.title, s.description) AGAINST(:query IN NATURAL LANGUAGE MODE) > 0
+            ";
+            $params = [':query' => $query];
+        }
         
         // Apply filters
         if (!empty($filters['language'])) {
@@ -683,21 +694,30 @@ class SnippetRepository
 
     public function findTrending(string $timeframe, int $limit): array
     {
-        $sql = "
-            SELECT s.*, 
-                   (s.view_count * 0.3 + s.star_count * 0.7) as trending_score,
-                   sv.code as latest_code,
-                   sv.analysis_results as latest_analysis
-            FROM snippets s
-            LEFT JOIN snippet_versions sv ON s.id = sv.snippet_id 
-            WHERE s.deleted_at IS NULL
-            AND s.created_at >= DATE_SUB(NOW(), INTERVAL {$timeframe})
-            ORDER BY trending_score DESC, s.created_at DESC
-            LIMIT :limit
-        ";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':limit' => $limit]);
+            $sql = "
+                SELECT s.*, 
+                       (s.view_count * 0.3 + s.star_count * 0.7) as trending_score,
+                       sv.code as latest_code,
+                       sv.analysis_results as latest_analysis
+                FROM snippets s
+                LEFT JOIN snippet_versions sv ON s.id = sv.snippet_id 
+                WHERE s.deleted_at IS NULL
+            ";
+            
+            $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $sql .= " AND s.created_at >= :cutoff";
+                $params = [':cutoff' => date('Y-m-d H:i:s', strtotime("-{$timeframe}"))];
+            } else {
+                $sql .= " AND s.created_at >= DATE_SUB(NOW(), INTERVAL {$timeframe})";
+                $params = [];
+            }
+            
+            $sql .= " ORDER BY trending_score DESC, s.created_at DESC LIMIT :limit";
+            $params[':limit'] = $limit;
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
         
         $results = [];
         while ($data = $stmt->fetch()) {
