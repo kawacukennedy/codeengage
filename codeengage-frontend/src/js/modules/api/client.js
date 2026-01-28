@@ -114,7 +114,7 @@ export class ApiClient {
                 );
             }
 
-            return result;
+            return result.data;
         } catch (error) {
             if (error.name === 'AbortError') {
                 throw new ApiError('Request timeout', 408);
