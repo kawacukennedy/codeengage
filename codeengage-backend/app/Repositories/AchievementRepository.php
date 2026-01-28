@@ -203,8 +203,14 @@ class AchievementRepository
 
         $params = [];
         if ($days) {
-            $sql .= " WHERE earned_at >= DATE_SUB(NOW(), INTERVAL :days DAY)";
-            $params[':days'] = $days;
+            $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $sql .= " WHERE earned_at >= :cutoff";
+                $params[':cutoff'] = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+            } else {
+                $sql .= " WHERE earned_at >= DATE_SUB(NOW(), INTERVAL :days DAY)";
+                $params[':days'] = $days;
+            }
         }
 
         $stmt = $this->db->prepare($sql);
