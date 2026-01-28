@@ -1,15 +1,20 @@
 /* Custom CSS Variables */
 :root {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-primary-light: #60a5fa;
+  /* Premium Design System - Deep Space Theme */
+  --color-primary: #7000FF;
+  /* Neon Purple */
+  --color-primary-dark: #5a00cc;
+  --color-primary-light: #9d4dff;
 
-  --color-secondary: #10b981;
-  --color-secondary-dark: #059669;
+  --color-accent: #00F0FF;
+  /* Neon Blue */
+  --color-accent-dark: #00c4d1;
 
-  --color-accent: #8b5cf6;
-  --color-accent-dark: #7c3aed;
+  --color-success: #00ff9d;
+  --color-warning: #ffb800;
+  --color-error: #ff0055;
 
+  /* Neutrals */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -21,29 +26,26 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
 
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
-  --color-success: #10b981;
-  --color-info: #3b82f6;
+  /* Theme Specific */
+  --color-deep-space: #0B0F19;
+  --color-card-glass: rgba(31, 41, 55, 0.4);
+  --color-border-glass: rgba(255, 255, 255, 0.1);
 
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Fira Mono', 'Monaco', 'Cascadia Code', monospace;
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
 
+  /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-neon: 0 0 10px rgba(0, 240, 255, 0.3), 0 0 20px rgba(112, 0, 255, 0.2);
 
-  --transition-fast: 150ms ease-in-out;
-  --transition-base: 200ms ease-in-out;
-  --transition-slow: 300ms ease-in-out;
-
-  --radius-sm: 0.25rem;
-  --radius: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
 
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
@@ -52,22 +54,30 @@
   --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
   --spacing-8: 2rem;
-  --spacing-10: 2.5rem;
   --spacing-12: 3rem;
-  --spacing-16: 4rem;
-  --spacing-20: 5rem;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Dark Theme (Default) */
-[data-theme="dark"] {
-  --color-bg-primary: var(--color-gray-900);
-  --color-bg-secondary: var(--color-gray-800);
-  --color-bg-tertiary: var(--color-gray-700);
-  --color-text-primary: var(--color-gray-100);
+/* Dark Theme (Forced Default for Premium) */
+:root {
+  --color-bg-primary: var(--color-deep-space);
+  --color-bg-secondary: rgba(31, 41, 55, 0.3);
+  /* Glass effect */
+  --color-bg-tertiary: rgba(55, 65, 81, 0.4);
+  --color-text-primary: #ffffff;
   --color-text-secondary: var(--color-gray-300);
-  --color-text-tertiary: var(--color-gray-400);
-  --color-border: var(--color-gray-700);
-  --color-border-light: var(--color-gray-600);
+  --color-text-tertiary: var(--color-gray-500);
+  --color-border: var(--color-border-glass);
+  --color-border-light: rgba(255, 255, 255, 0.2);
+}
+
+/* Backwards compatibility */
+[data-theme="dark"] {
+  --color-bg-primary: var(--color-deep-space);
 }
 
 /* Light Theme */
@@ -98,6 +108,44 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(112, 0, 255, 0.08), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08), transparent 25%);
+  background-attachment: fixed;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-deep-space);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-700);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-600);
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: var(--color-card-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-glass);
+}
+
+.glass-strong {
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-border-glass);
 }
 
 /* Typography */
@@ -230,9 +278,16 @@ textarea::placeholder {
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
   color: white;
-  border-color: var(--color-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 10px rgba(112, 0, 255, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  box-shadow: 0 0 20px rgba(112, 0, 255, 0.5);
+  transform: translateY(-1px);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -274,16 +329,25 @@ textarea::placeholder {
 
 /* Cards */
 .card {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-card-glass);
+  border: 1px solid var(--color-border-glass);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-xl);
 }
 
 .card-header {
   padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-glass);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .card-body {
@@ -758,10 +822,12 @@ html.dark .dark\:text-gray-400 {
 .landing-header h1 {
   font-size: 3.5rem;
   margin-bottom: var(--spacing-4);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: -0.05em;
+  text-shadow: 0 0 30px rgba(112, 0, 255, 0.3);
 }
 
 .landing-header .tagline {
