@@ -206,32 +206,43 @@ class AuditRepository
 
     public function cleanup(int $daysToKeep = 90): int
     {
-        $sql = "
-            DELETE FROM audit_logs 
-            WHERE created_at < DATE_SUB(NOW(), INTERVAL :days DAY)
-        ";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':days' => $daysToKeep]);
+        $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $sql = "DELETE FROM audit_logs WHERE created_at < :cutoff";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':cutoff' => date('Y-m-d H:i:s', strtotime("-{$daysToKeep} days"))]);
+        } else {
+            $sql = "
+                DELETE FROM audit_logs 
+                WHERE created_at < DATE_SUB(NOW(), INTERVAL :days DAY)
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':days' => $daysToKeep]);
+        }
 
         return $stmt->rowCount();
     }
 
     public function getStats(?int $days = 30): array
     {
+        $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         $sql = "
             SELECT 
                 action_type,
                 COUNT(*) as count,
                 DATE(created_at) as date
             FROM audit_logs 
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+            WHERE created_at >= :cutoff
             GROUP BY action_type, DATE(created_at)
             ORDER BY date DESC, count DESC
         ";
 
+        $cutoff = ($driver === 'sqlite') 
+            ? date('Y-m-d H:i:s', strtotime("-{$days} days"))
+            : date('Y-m-d H:i:s', strtotime("-{$days} days")); // Simpler to use PHP date for both if possible
+            
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':days' => $days]);
+        $stmt->execute([':cutoff' => $cutoff]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
