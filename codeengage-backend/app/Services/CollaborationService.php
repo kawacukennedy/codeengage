@@ -50,14 +50,6 @@ class CollaborationService
 
     public function pushUpdate($token, $data, $userId)
     {
-        // Store update in a temporary table or update the main snippet version?
-        // Since we don't have a separate `updates` table in schema (except session cursor/participants),
-        // we might store pending edits or just direct cursor positions.
-        // The specs mentioned Conflict Resolution, but schema is minimal.
-        // We'll update cursor_positions in the session table.
-        
-        if (!isset($data['cursor'])) return;
-        
         $stmt = $this->pdo->prepare("SELECT * FROM collaboration_sessions WHERE session_token = ?");
         $stmt->execute([$token]);
         $session = $stmt->fetch();
@@ -65,41 +57,64 @@ class CollaborationService
         if (!$session) ApiResponse::error('Session not found', 404);
         
         $cursors = json_decode($session['cursor_positions'], true) ?? [];
-        $cursors[$userId] = $data['cursor'];
+        if (isset($data['cursor'])) {
+            $cursors[$userId] = $data['cursor'];
+        }
+        
+        // Store code change if provided
+        $codeChange = $data['change'] ?? null;
         
         $update = $this->pdo->prepare("
             UPDATE collaboration_sessions 
-            SET cursor_positions = ?, last_activity = ? 
+            SET cursor_positions = ?, 
+                last_activity = ?,
+                metadata = JSON_SET(COALESCE(metadata, '{}'), '$.last_change', ?, '$.last_change_by', ?)
             WHERE id = ?
         ");
-        $update->execute([json_encode($cursors), date('Y-m-d H:i:s'), $session['id']]);
+        
+        $update->execute([
+            json_encode($cursors), 
+            date('Y-m-d H:i:s'), 
+            $codeChange ? json_encode($codeChange) : null,
+            $userId,
+            $session['id']
+        ]);
         
         return ['success' => true];
     }
 
     public function pollUpdates($token, $lastUpdateTimestamp)
     {
-        // Long polling loop
         $startTime = time();
-        $timeout = 20; // seconds
-        
+        $timeout = 25; // seconds
+        $session_id = null;
+
         while (time() - $startTime < $timeout) {
             $stmt = $this->pdo->prepare("
-                SELECT last_activity, cursor_positions, participants 
+                SELECT id, last_activity, cursor_positions, participants, metadata
                 FROM collaboration_sessions 
-                WHERE session_token = ? AND last_activity > ?
+                WHERE session_token = ?
             ");
-            // Note: Timestamp comparison with string date from DB might need formatting
-            $stmt->execute([$token, date('Y-m-d H:i:s', $lastUpdateTimestamp)]);
-            $data = $stmt->fetch();
+            $stmt->execute([$token]);
+            $session = $stmt->fetch();
             
-            if ($data) {
-                return $data; // Return immediately if new data
+            if (!$session) return null;
+            
+            $dbLastActivity = strtotime($session['last_activity']);
+            
+            if ($dbLastActivity > $lastUpdateTimestamp) {
+                return [
+                    'last_activity' => $dbLastActivity,
+                    'cursors' => json_decode($session['cursor_positions'], true),
+                    'participants' => json_decode($session['participants'], true),
+                    'metadata' => json_decode($session['metadata'], true)
+                ];
             }
             
-            usleep(500000); // Sleep 0.5s
+            usleep(1000000); // Sleep 1s
         }
         
-        return null; // No updates
+        return null;
     }
+}
 }
