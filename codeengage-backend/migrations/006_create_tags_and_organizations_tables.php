@@ -133,3 +133,8 @@ class Migration_006_create_tags_and_organizations_tables
                $this->db->exec("DROP TABLE IF EXISTS tags") !== false;
     }
 }
+
+return function(PDO $pdo) {
+    $migration = new Migration_006_create_tags_and_organizations_tables($pdo);
+    return $migration->up();
+};
