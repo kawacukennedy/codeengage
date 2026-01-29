@@ -11,7 +11,8 @@ use PDO;
 
 abstract class DatabaseTestCase extends TestCase
 {
-    protected static ?PDO $db = null;
+    protected static ?PDO $staticDb = null;
+    protected ?PDO $db = null;
     protected bool $useTransactions = true;
 
     /**
@@ -21,12 +22,14 @@ abstract class DatabaseTestCase extends TestCase
     {
         parent::setUp();
         
-        if (self::$db === null) {
+        if (self::$staticDb === null) {
             $this->initDatabase();
         }
         
+        $this->db = self::$staticDb;
+        
         if ($this->useTransactions) {
-            self::$db->beginTransaction();
+            $this->db->beginTransaction();
         }
     }
 
@@ -35,8 +38,8 @@ abstract class DatabaseTestCase extends TestCase
      */
     protected function tearDown(): void
     {
-        if ($this->useTransactions && self::$db !== null && self::$db->inTransaction()) {
-            self::$db->rollBack();
+        if ($this->useTransactions && $this->db !== null && $this->db->inTransaction()) {
+            $this->db->rollBack();
         }
         
         parent::tearDown();
@@ -59,7 +62,7 @@ abstract class DatabaseTestCase extends TestCase
         $dsn = "mysql:host={$host};dbname={$name};charset={$charset}";
         
         try {
-            self::$db = new PDO($dsn, $user, $pass, [
+            self::$staticDb = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false
@@ -76,11 +79,11 @@ abstract class DatabaseTestCase extends TestCase
      */
     protected function getDb(): PDO
     {
-        if (self::$db === null) {
+        if (self::$staticDb === null) {
             $this->initDatabase();
         }
         
-        return self::$db;
+        return self::$staticDb;
     }
 
     /**
@@ -93,20 +96,24 @@ abstract class DatabaseTestCase extends TestCase
     {
         $userData = $this->getTestUserData($data);
         
-        $sql = "INSERT INTO users (username, email, password_hash, display_name, bio, preferences, created_at, updated_at)
-                VALUES (:username, :email, :password_hash, :display_name, :bio, :preferences, NOW(), NOW())";
+        $sql = "INSERT INTO users (username, email, password_hash, display_name, bio, preferences, role, created_at, updated_at)
+                VALUES (:username, :email, :password_hash, :display_name, :bio, :preferences, :role, NOW(), NOW())";
         
-        $stmt = self::$db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'username' => $userData['username'],
             'email' => $userData['email'],
             'password_hash' => $userData['password_hash'],
             'display_name' => $userData['display_name'],
             'bio' => $userData['bio'],
-            'preferences' => $userData['preferences']
+            'preferences' => $userData['preferences'],
+            'role' => $userData['role'] ?? 'user'
         ]);
         
-        return (int) self::$db->lastInsertId();
+        $id = (int) $this->db->lastInsertId();
+
+        
+        return $id;
     }
 
     /**
@@ -116,14 +123,19 @@ abstract class DatabaseTestCase extends TestCase
      * @param array $data Snippet data overrides
      * @return int
      */
-    protected function insertTestSnippet(int $authorId, array $data = []): int
+    protected function insertTestSnippet($authorId, array $data = []): int
     {
+        if (is_array($authorId)) {
+            $data = $authorId;
+            $authorId = (int) ($data['author_id'] ?? $data['user_id'] ?? 0);
+        }
+
         $snippetData = $this->getTestSnippetData(array_merge(['author_id' => $authorId], $data));
         
         $sql = "INSERT INTO snippets (author_id, title, description, visibility, language, created_at, updated_at)
                 VALUES (:author_id, :title, :description, :visibility, :language, NOW(), NOW())";
         
-        $stmt = self::$db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'author_id' => $snippetData['author_id'],
             'title' => $snippetData['title'],
@@ -132,19 +144,33 @@ abstract class DatabaseTestCase extends TestCase
             'language' => $snippetData['language']
         ]);
         
-        return (int) self::$db->lastInsertId();
+        $id = (int) $this->db->lastInsertId();
+
+        if (isset($data['code'])) {
+            $this->insertTestSnippetVersion($id, $authorId, [
+                'code' => $data['code'],
+                'version_number' => 1
+            ]);
+        }
+        
+        return $id;
     }
 
     /**
      * Insert a test snippet version
      *
-     * @param int $snippetId Snippet ID
+     * @param int|array $snippetId Snippet ID or data array
      * @param int $editorId Editor user ID
      * @param array $data Version data overrides
      * @return int
      */
-    protected function insertTestSnippetVersion(int $snippetId, int $editorId, array $data = []): int
+    protected function insertTestSnippetVersion($snippetId, int $editorId = 0, array $data = []): int
     {
+        if (is_array($snippetId)) {
+            $data = $snippetId;
+            $snippetId = (int) ($data['snippet_id'] ?? 0);
+            $editorId = (int) ($data['editor_id'] ?? $editorId);
+        }
         $versionData = $this->getTestSnippetVersionData(array_merge([
             'snippet_id' => $snippetId,
             'editor_id' => $editorId
@@ -153,7 +179,7 @@ abstract class DatabaseTestCase extends TestCase
         $sql = "INSERT INTO snippet_versions (snippet_id, version_number, code, checksum, editor_id, change_summary, created_at)
                 VALUES (:snippet_id, :version_number, :code, :checksum, :editor_id, :change_summary, NOW())";
         
-        $stmt = self::$db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'snippet_id' => $versionData['snippet_id'],
             'version_number' => $versionData['version_number'],
@@ -163,7 +189,10 @@ abstract class DatabaseTestCase extends TestCase
             'change_summary' => $versionData['change_summary']
         ]);
         
-        return (int) self::$db->lastInsertId();
+        $id = (int) $this->db->lastInsertId();
+
+        
+        return $id;
     }
 
     /**
@@ -178,12 +207,12 @@ abstract class DatabaseTestCase extends TestCase
             'role_permissions', 'permissions', 'roles', 'tags', 'users'
         ];
         
-        self::$db->exec('SET FOREIGN_KEY_CHECKS = 0');
+        $this->db->exec('SET FOREIGN_KEY_CHECKS = 0');
         
         foreach ($tables as $table) {
-            self::$db->exec("TRUNCATE TABLE {$table}");
+            $this->db->exec("TRUNCATE TABLE {$table}");
         }
         
-        self::$db->exec('SET FOREIGN_KEY_CHECKS = 1');
+        $this->db->exec('SET FOREIGN_KEY_CHECKS = 1');
     }
 }
