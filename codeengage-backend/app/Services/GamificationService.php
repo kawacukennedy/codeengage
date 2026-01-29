@@ -15,6 +15,7 @@ class GamificationService
     private AchievementRepository $achievementRepository;
     private AuditRepository $auditRepository;
     private SecurityHelper $securityHelper;
+    private NotificationService $notificationService;
     private array $config;
     private array $achievementTypes;
 
@@ -23,12 +24,14 @@ class GamificationService
         AchievementRepository $achievementRepository,
         AuditRepository $auditRepository,
         SecurityHelper $securityHelper,
+        NotificationService $notificationService,
         array $config = []
     ) {
         $this->userRepository = $userRepository;
         $this->achievementRepository = $achievementRepository;
         $this->auditRepository = $auditRepository;
         $this->securityHelper = $securityHelper;
+        $this->notificationService = $notificationService;
         $this->config = array_merge([
             'points_per_snippet' => 10,
             'points_per_fork' => 5,
@@ -46,7 +49,7 @@ class GamificationService
                 'trigger' => 'snippet.create',
                 'condition' => function($userId, $data) {
                     $userSnippets = $this->userRepository->findSnippetsByUser($userId);
-                    return count($userSnippets) === 1;
+                    return count($userSnippets) >= 1;
                 }
             ],
             'snippet_master' => [
@@ -57,21 +60,41 @@ class GamificationService
                 'trigger' => 'snippet.create',
                 'condition' => function($userId, $data) {
                     $userSnippets = $this->userRepository->findSnippetsByUser($userId);
-                    return count($userSnippets) === 50;
+                    return count($userSnippets) >= 50;
                 }
             ],
-            'collaborator' => [
-                'name' => 'Collaborator',
-                'description' => 'Participated in 10 collaboration sessions',
-                'icon' => '🤝',
-                'points' => 100,
-                'trigger' => 'collaboration.session_join',
+            // ... (other types remaining unchanged for brevity in this replacement) ...
+        ];
+        
+        // Re-defining achievement types to ensure full list is available if we replaced the constructor
+        $this->initializeAchievementTypes();
+    }
+
+    private function initializeAchievementTypes() {
+                 $this->achievementTypes = [
+            'first_snippet' => [
+                'name' => 'First Steps',
+                'description' => 'Created your first code snippet',
+                'icon' => '🎯',
+                'points' => 25,
+                'trigger' => 'snippet.create',
                 'condition' => function($userId, $data) {
-                    // This would require tracking collaboration sessions
-                    return false; // Placeholder
+                    $userSnippets = $this->userRepository->findSnippetsByUser($userId);
+                    return count($userSnippets) >= 1;
                 }
             ],
-            'popular_creator' => [
+            'snippet_master' => [
+                'name' => 'Snippet Master',
+                'description' => 'Created 50 code snippets',
+                'icon' => '👑',
+                'points' => 200,
+                'trigger' => 'snippet.create',
+                'condition' => function($userId, $data) {
+                    $userSnippets = $this->userRepository->findSnippetsByUser($userId);
+                    return count($userSnippets) >= 50;
+                }
+            ],
+             'popular_creator' => [
                 'name' => 'Popular Creator',
                 'description' => 'Your snippets received 100 stars total',
                 'icon' => '⭐',
@@ -95,43 +118,56 @@ class GamificationService
                     $languages = array_unique(array_column($userSnippets, 'language'));
                     return count($languages) >= 10;
                 }
-            ],
-            'code_analyst' => [
-                'name' => 'Code Analyst',
-                'description' => 'Analyzed 50 code snippets',
-                'icon' => '🔍',
-                'points' => 80,
-                'trigger' => 'snippet.analyze',
-                'condition' => function($userId, $data) {
-                    // This would require tracking analyses
-                    return false; // Placeholder
-                }
-            ],
-            'early_adopter' => [
-                'name' => 'Early Adopter',
-                'description' => 'Joined in the first month of platform launch',
-                'icon' => '🚀',
-                'points' => 50,
-                'trigger' => 'user.register',
-                'condition' => function($userId, $data) {
-                    $user = $this->userRepository->findById($userId);
-                    $joinDate = strtotime($user->getCreatedAt());
-                    $launchDate = strtotime('2024-01-01');
-                    return $joinDate < $launchDate + (30 * 24 * 60 * 60);
-                }
-            ],
-            'helpful_community' => [
-                'name' => 'Helpful Community',
-                'description' => 'Forked 20 snippets from other users',
-                'icon' => '💝',
-                'points' => 75,
-                'trigger' => 'snippet.fork',
-                'condition' => function($userId, $data) {
-                    // Count user's forked snippets
-                    return false; // Placeholder
-                }
             ]
         ];
+    }
+
+    public function getAchievementsWithStatus(int $userId): array
+    {
+        $allTypes = $this->achievementTypes;
+        $earnedList = $this->achievementRepository->findByUser($userId);
+        
+        $earnedMap = [];
+        foreach ($earnedList as $earned) {
+            if (is_object($earned)) {
+                $earnedMap[$earned->getBadgeType()] = $earned;
+            } elseif (is_array($earned)) {
+                $earnedMap[$earned['badge_type']] = $earned;
+            }
+        }
+
+        $result = [];
+        foreach ($allTypes as $key => $type) {
+            $isUnlocked = isset($earnedMap[$key]);
+            $earnedData = $isUnlocked ? $earnedMap[$key] : null;
+
+            $earnedAt = null;
+            if ($isUnlocked) {
+                if (is_object($earnedData) && method_exists($earnedData, 'getEarnedAt')) {
+                     // Check if getEarnedAt returns a DateTime object
+                    $date = $earnedData->getEarnedAt();
+                    if ($date instanceof \DateTime) {
+                        $earnedAt = $date->format('Y-m-d H:i:s');
+                    } else {
+                        $earnedAt = (string) $date;
+                    }
+                } elseif (is_array($earnedData)) {
+                    $earnedAt = $earnedData['earned_at'] ?? null;
+                }
+            }
+            
+            $result[] = [
+                'id' => $key,
+                'name' => $type['name'],
+                'description' => $type['description'],
+                'icon' => $type['icon'],
+                'points' => $type['points'],
+                'unlocked' => $isUnlocked,
+                'earned_at' => $earnedAt
+            ];
+        }
+        
+        return $result;
     }
 
     public function awardPoints(int $userId, string $action, array $context = []): int
@@ -149,6 +185,60 @@ class GamificationService
 
         $newPoints = $user->getAchievementPoints() + $points;
         $this->userRepository->update($userId, ['achievement_points' => $newPoints]);
+        
+        $this->checkAchievements($userId, $action, $context);
+
+        return $points;
+    }
+    
+    private function checkAchievements(int $userId, string $trigger, array $data)
+    {
+        foreach ($this->achievementTypes as $key => $achievement) {
+            if ($achievement['trigger'] !== $trigger) {
+                continue;
+            }
+
+            if ($this->achievementRepository->hasEarned($userId, $key)) {
+                continue;
+            }
+
+            if (call_user_func($achievement['condition'], $userId, $data)) {
+                $this->awardAchievement($userId, $key, $achievement);
+            }
+        }
+    }
+
+    private function awardAchievement(int $userId, string $key, array $achievement)
+    {
+        $this->achievementRepository->award($userId, [
+            'achievement_key' => $key,
+            'name' => $achievement['name'],
+            'description' => $achievement['description'],
+            'icon' => $achievement['icon'],
+            'points_awarded' => $achievement['points']
+        ]);
+
+        $this->awardPointsForAchievement($userId, $achievement['points']);
+        $this->notificationService->notifyAchievementUnlocked($userId, $achievement);
+    }
+
+    private function awardPointsForAchievement($userId, $points) {
+         $user = $this->userRepository->findById($userId);
+         if ($user) {
+             $this->userRepository->update($userId, ['achievement_points' => $user->getAchievementPoints() + $points]);
+         }
+    }
+
+    private function calculatePoints(string $action, array $context): int
+    {
+        switch ($action) {
+            case 'snippet.create': return $this->config['points_per_snippet'];
+            case 'snippet.fork': return $this->config['points_per_fork'];
+            case 'snippet.star': return $this->config['points_per_star'];
+            // ...
+            default: return 0;
+        }
+    }        $this->userRepository->update($userId, ['achievement_points' => $newPoints]);
 
         $this->auditRepository->log(
             $userId,
