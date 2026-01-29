@@ -11,15 +11,25 @@ import { ApiClient } from './modules/api/client.js';
 import { Dashboard } from './pages/dashboard.js';
 import { Snippets } from './pages/snippets.js';
 import { Profile } from './pages/profile.js';
+import { Settings } from './pages/settings.js';
 import { Admin } from './pages/admin.js';
-import { CodeEditor as Editor } from './modules/editor.js';
 import { SnippetViewer } from './pages/snippet-viewer.js';
+import SnippetEditor from './pages/snippet-editor.js';
+import NotificationSystem from './modules/components/notification-system.js';
+import CommandPalette from './modules/components/command-palette.js';
+import CodeVisualizer from './modules/components/code-visualizer.js';
 
 class App {
     constructor() {
+        // Expose app instance globally immediately
+        window.app = this;
+
         this.apiClient = new ApiClient();
         this.router = new Router(this);
         this.auth = new Auth(this);
+        this.notifications = new NotificationSystem();
+        this.commandPalette = new CommandPalette();
+        this.visualizer = null; // Will be initialized when needed
         this.currentPage = null;
 
         // Initialize modules
@@ -31,13 +41,70 @@ class App {
      */
     async init() {
         try {
+            // Register Service Worker for offline support
+            this.registerServiceWorker();
+
+            // Handle online/offline events
+            window.addEventListener('online', () => this.handleOnline());
+            window.addEventListener('offline', () => this.handleOffline());
+
+            // Setup global auth interceptor (Network resilience)
+            this.apiClient.addResponseInterceptor(async (response) => {
+                if (response.status === 401 || response.status === 403) {
+                    // Only redirect if we are not already on login/register pages
+                    const path = window.location.pathname;
+                    if (path !== '/login' && path !== '/register') {
+                        console.warn('Session expired or invalid, redirecting to login');
+                        await this.auth.logout(false); // Client-side cleanup only
+                    }
+                }
+                return response;
+            });
+
+            this.initTheme();
+
             await this.auth.init();
+            this.setupGlobalListeners();
             this.setupRoutes();
             this.router.handleRouteChange();
-            this.setupGlobalListeners();
         } catch (error) {
             console.error('App initialization failed:', error);
-            this.showError('Failed to start application');
+            this.showError('Application failed to initialize properly');
+        }
+    }
+
+    registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    }
+
+    handleOnline() {
+        this.showSuccess('You are back online');
+        document.body.classList.remove('is-offline');
+    }
+
+    handleOffline() {
+        this.showError('You are currently offline. Some features may be unavailable.');
+        document.body.classList.add('is-offline');
+    }
+
+    /**
+     * Initialize/Update theme based on settings
+     */
+    initTheme() {
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     }
 
@@ -69,6 +136,11 @@ class App {
             await this.currentPage.init();
         }, { protected: true });
 
+        this.router.add('/settings', async () => {
+            this.currentPage = new Settings(this);
+            await this.currentPage.init();
+        }, { protected: true });
+
         this.router.add('/admin', async () => {
             if (this.auth.user?.role !== 'admin') {
                 return this.router.navigate('/dashboard');
@@ -83,11 +155,15 @@ class App {
         }, { protected: true });
 
         this.router.add('/new', async () => {
-            // Load editor page directly or via a page module
-            const container = document.getElementById('app');
-            container.innerHTML = '<h1>New Snippet</h1><div id="editor"></div>';
-            const editor = new Editor('editor');
-            editor.init();
+            this.currentPage = new SnippetEditor(this);
+            await this.currentPage.init();
+            this.currentPage.render();
+        }, { protected: true });
+
+        this.router.add('/editor/:id', async (params) => {
+            this.currentPage = new SnippetEditor(this, params.id);
+            await this.currentPage.init();
+            this.currentPage.render();
         }, { protected: true });
 
         // Auth routes
@@ -108,9 +184,9 @@ class App {
     renderLogin() {
         const container = document.getElementById('app');
         container.innerHTML = `
-            <div class="min-h-screen flex bg-deep-space md:overflow-hidden">
+            <div class="min-h-screen flex bg-deep-space">
                 <!-- Visual Side -->
-                <div class="hidden md:flex w-1/2 relative items-center justify-center p-12 overflow-hidden">
+                <div class="hidden md:flex w-1/2 relative items-center justify-center p-12 overflow-hidden sticky top-0 h-screen">
                     <div class="absolute inset-0 bg-gradient-radial from-neon-purple/20 to-transparent opacity-50"></div>
                     <div class="absolute -top-40 -left-40 w-96 h-96 bg-neon-blue rounded-full blur-[128px] opacity-20 animate-pulse-slow"></div>
                     <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-neon-purple rounded-full blur-[128px] opacity-20 animate-pulse-slow" style="animation-delay: 1s"></div>
@@ -132,7 +208,7 @@ class App {
                 </div>
 
                 <!-- Form Side -->
-                <div class="w-full lg:w-1/2 lg:ml-auto flex items-center justify-center p-4 md:p-8 relative min-h-screen">
+                <div class="w-full lg:w-1/2 lg:ml-auto flex items-center justify-center p-4 md:p-8 relative min-h-screen overflow-y-auto">
                     <div class="absolute inset-0 bg-[url('/assets/svg/grid-pattern.svg')] opacity-5"></div>
                     <!-- Mobile Background Elements -->
                     <div class="lg:hidden absolute top-0 right-0 w-64 h-64 bg-neon-purple/20 rounded-full blur-[80px]"></div>
@@ -205,9 +281,9 @@ class App {
     renderRegister() {
         const container = document.getElementById('app');
         container.innerHTML = `
-            <div class="min-h-screen flex bg-deep-space md:overflow-hidden">
+            <div class="min-h-screen flex bg-deep-space">
                 <!-- Visual Side -->
-                <div class="hidden md:flex w-1/2 relative items-center justify-center p-12 overflow-hidden">
+                <div class="hidden md:flex w-1/2 relative items-center justify-center p-12 overflow-hidden sticky top-0 h-screen">
                     <div class="absolute inset-0 bg-gradient-radial from-neon-blue/20 to-transparent opacity-50"></div>
                     <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/5 rounded-full animate-[spin_60s_linear_infinite]"></div>
                     <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-neon-purple/20 rounded-full animate-[spin_40s_linear_infinite_reverse]"></div>
@@ -499,11 +575,15 @@ class App {
      * @param {string} message - Error message
      */
     showError(message) {
-        const notification = document.createElement('div');
-        notification.className = 'notification error';
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
+        return this.notifications.error(message);
+    }
+
+    showSuccess(message) {
+        return this.notifications.success(message);
+    }
+
+    showInfo(message) {
+        return this.notifications.info(message);
     }
 
     /**
