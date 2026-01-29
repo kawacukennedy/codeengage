@@ -35,7 +35,7 @@ export class SnippetViewer {
         try {
             const response = await this.app.apiClient.get(`/snippets/${id}`);
             if (response.success) {
-                this.snippet = response.data.snippet || response.data; // Handle different potential response structures
+                this.snippet = response.data;
                 this.currentVersion = (this.snippet.versions && this.snippet.versions[0]) || null;
             } else {
                 throw new Error(response.message || 'Snippet not found');
