@@ -235,16 +235,84 @@ class UserRepository
 
     public function findSnippetsByUser(int $userId, array $filters = [], int $limit = 20, int $offset = 0): array
     {
-        // This would typically delegate to SnippetRepository
-        // For now, return empty array
-        return [];
+        $sql = "SELECT s.*, u.username as author_name 
+                FROM snippets s 
+                JOIN users u ON s.author_id = u.id 
+                WHERE s.author_id = :user_id AND s.deleted_at IS NULL";
+        
+        $params = [':user_id' => $userId];
+
+        if (!empty($filters['visibility'])) {
+            $sql .= " AND s.visibility = :visibility";
+            $params[':visibility'] = $filters['visibility'];
+        }
+
+        $sql .= " ORDER BY s.created_at DESC LIMIT :limit OFFSET :offset";
+        $params[':limit'] = $limit;
+        $params[':offset'] = $offset;
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $stmt->execute();
+
+        // Note: Ideally use Snippet::fromData, but we'd need to import Snippet model
+        // For now returning raw array which is compatible with most frontend needs
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function countSnippetsByUser(int $userId, array $filters = []): int
     {
-        // This would typically delegate to SnippetRepository
-        // For now, return 0
-        return 0;
+        $sql = "SELECT COUNT(*) FROM snippets WHERE author_id = :user_id AND deleted_at IS NULL";
+        $params = [':user_id' => $userId];
+
+        if (!empty($filters['visibility'])) {
+            $sql .= " AND visibility = :visibility";
+            $params[':visibility'] = $filters['visibility'];
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return (int)$stmt->fetchColumn();
+    }
+
+    public function getUserStats(int $userId): array
+    {
+        $stats = [
+            'total_snippets' => 0,
+            'total_views' => 0,
+            'total_stars' => 0,
+            'achievement_points' => 0
+        ];
+
+        // Snippet Stats
+        $sql = "SELECT 
+                    COUNT(*) as total_snippets,
+                    SUM(view_count) as total_views,
+                    SUM(star_count) as total_stars
+                FROM snippets 
+                WHERE author_id = ? AND deleted_at IS NULL";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId]);
+        $snippetStats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($snippetStats) {
+            $stats['total_snippets'] = (int)$snippetStats['total_snippets'];
+            $stats['total_views'] = (int)$snippetStats['total_views'];
+            $stats['total_stars'] = (int)$snippetStats['total_stars'];
+        }
+
+        // Get user achievement points (separate query or from user object)
+        $user = $this->findById($userId);
+        if ($user) {
+            $stats['achievement_points'] = $user->getAchievementPoints();
+            // Could add rank/level logic here
+        }
+
+        return $stats;
     }
 
     public function getAchievements(int $userId, int $limit = 50): array
