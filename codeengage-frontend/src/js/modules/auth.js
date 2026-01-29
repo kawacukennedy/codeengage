@@ -24,7 +24,7 @@ export class Auth {
         if (this.token) {
             try {
                 // Verify token and get user data
-                const response = await this.app.apiClient.get('/auth/me');
+                const response = await this.app.apiClient.get('/users/me');
                 this.user = response.data;
             } catch (error) {
                 console.error('Auth initialization failed:', error);
