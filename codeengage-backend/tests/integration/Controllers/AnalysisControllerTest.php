@@ -67,7 +67,7 @@ mysqli_query($conn, $query);
 ';
 
         // Check for SQL injection patterns
-        $hasSqlInjection = preg_match('/\$_GET\s*\[.*\].*(?:query|mysql|SELECT)/i', $vulnerableCode);
+        $hasSqlInjection = preg_match('/\$_GET\s*\[.*\].*(?:query|mysql|SELECT)/is', $vulnerableCode);
         
         $this->assertEquals(1, $hasSqlInjection);
     }
@@ -149,25 +149,29 @@ function veryLongFunctionName() {
 
     public function testAnalyzeCodeSavesAnalysisResults(): void
     {
+        // Get version ID
+        $query = $this->db->prepare("SELECT id FROM snippet_versions WHERE snippet_id = ?");
+        $query->execute([$this->snippetId]);
+        $versionId = $query->fetchColumn();
+        $this->assertNotFalse($versionId, 'Version ID not found for snippet ' . $this->snippetId);
+
         $stmt = $this->db->prepare("
-            INSERT INTO snippet_analyses (snippet_id, analysis_type, result, created_at)
-            VALUES (?, ?, ?, NOW())
+            INSERT INTO code_analyses (snippet_version_id, analysis_type, complexity_score, security_issues, performance_suggestions, code_smells, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
         ");
         
-        $analysisResult = json_encode([
-            'complexity' => 5,
-            'lines' => 20,
-            'security_issues' => [],
-            'suggestions' => ['Consider adding type hints']
+        $stmt->execute([
+            $versionId, 
+            'full', 
+            5.0, 
+            json_encode([]), 
+            json_encode(['Consider adding type hints']), 
+            json_encode([])
         ]);
         
-        $stmt->execute([$this->snippetId, 'full', $analysisResult]);
-        
         // Verify saved
-        $query = $this->db->prepare("
-            SELECT * FROM snippet_analyses WHERE snippet_id = ?
-        ");
-        $query->execute([$this->snippetId]);
+        $query = $this->db->prepare("SELECT * FROM code_analyses WHERE snippet_version_id = ?");
+        $query->execute([$versionId]);
         $analysis = $query->fetch(\PDO::FETCH_ASSOC);
         
         $this->assertNotFalse($analysis);
