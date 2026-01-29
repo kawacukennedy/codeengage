@@ -4,9 +4,12 @@
  * Main dashboard showing user's snippets, activity, and quick actions.
  */
 
+import Navigation from '../modules/components/navigation.js';
+
 export class Dashboard {
     constructor(app) {
         this.app = app;
+        this.nav = new Navigation('/dashboard');
         this.data = {
             user: null,
             recentSnippets: [],
@@ -20,6 +23,9 @@ export class Dashboard {
      * Initialize the dashboard page
      */
     async init() {
+        if (!this.app.auth.isAuthenticated()) {
+            return this.app.router.navigate('/login');
+        }
         await this.loadDashboardData();
         this.render();
         this.setupEventListeners();
@@ -38,10 +44,10 @@ export class Dashboard {
             ]);
 
             this.data.user = userRes.data;
-            this.data.recentSnippets = snippetsRes.data?.snippets || [];
-            this.data.starredSnippets = starredRes.data?.snippets || [];
-            this.data.activity = activityRes.data?.activities || [];
-            this.data.stats = snippetsRes.data?.stats || {};
+            this.data.recentSnippets = snippetsRes.data || [];
+            this.data.starredSnippets = starredRes.data || [];
+            this.data.activity = activityRes.data || [];
+            this.data.stats = userRes.data?.stats || {}; // Stats might be part of user or separate
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
             this.app.showError('Failed to load dashboard');
@@ -58,6 +64,7 @@ export class Dashboard {
         const user = this.data.user || {};
 
         container.innerHTML = `
+            ${this.nav.render()}
             <div class="min-h-screen bg-deep-space p-4 md:p-8">
                 <!-- Dashboard Header -->
                 <header class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 animate-fade-in">
@@ -74,6 +81,9 @@ export class Dashboard {
                         <div class="glass px-4 py-2 rounded-lg flex items-center gap-2 text-sm text-gray-300">
                             <span class="text-yellow-400">⚡</span> ${this.data.stats?.total_snippets || 0} Snippets
                         </div>
+                        <button id="logout-btn" class="glass p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors" title="Logout">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
                          <a href="/new" class="btn btn-primary rounded-xl shadow-neon hover:scale-105 transition-transform">
                             <span class="text-lg mr-1">+</span> New Snippet
                         </a>
