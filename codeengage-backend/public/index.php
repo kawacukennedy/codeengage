@@ -141,14 +141,32 @@ try {
         'health' => 'Health',
         'analysis' => 'Analysis',
         'collaboration' => 'Collaboration',
-        'export' => 'Export'
+        'export' => 'Export',
+        'tags' => 'Tag'
     ];
 
     // Special routing for snippets (default)
     if (empty($uriParts[0]) || $uriParts[0] === 'snippets') {
         $controllerName = 'Snippet';
-        $action = $uriParts[1] ?? 'index';
-        $params = array_slice($uriParts, 2);
+        
+        // Check if second part is a numeric ID (RESTful GET /snippets/{id})
+        if (isset($uriParts[1]) && is_numeric($uriParts[1])) {
+            // Check for sub-resource/action (e.g., /snippets/1/star)
+            if (isset($uriParts[2])) {
+                $action = $uriParts[2];
+            } else {
+                $action = 'show';
+            }
+            
+            $params = [$uriParts[1]];
+            // Append any further params (if any 4th part exists?)
+            if (isset($uriParts[3])) {
+                $params = array_merge($params, array_slice($uriParts, 3));
+            }
+        } else {
+            $action = $uriParts[1] ?? 'index';
+            $params = array_slice($uriParts, 2);
+        }
     } 
     // Special routing for /users/me/* - handle "me" as action, subpath as method
     elseif ($uriParts[0] === 'users' && isset($uriParts[1]) && $uriParts[1] === 'me') {
