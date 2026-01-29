@@ -200,3 +200,8 @@ class Migration_007_create_audit_and_rbac_tables
                $this->db->exec("DROP TABLE IF EXISTS roles") !== false;
     }
 }
+
+return function(PDO $pdo) {
+    $migration = new Migration_007_create_audit_and_rbac_tables($pdo);
+    return $migration->up();
+};
