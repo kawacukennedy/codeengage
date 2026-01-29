@@ -3,11 +3,11 @@
 return [
     'default' => $_ENV['DB_CONNECTION'] ?? 'mysql',
 
-    'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
-    'port' => $_ENV['DB_PORT'] ?? '3306',
-    'name' => $_ENV['DB_DATABASE'] ?? 'codeengage',
-    'user' => $_ENV['DB_USERNAME'] ?? 'root',
-    'pass' => $_ENV['DB_PASSWORD'] ?? '',
+    'host' => getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '127.0.0.1'),
+    'port' => getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '3306'),
+    'name' => getenv('DB_DATABASE') ?: ($_ENV['DB_DATABASE'] ?? 'codeengage'),
+    'user' => getenv('DB_USERNAME') ?: ($_ENV['DB_USERNAME'] ?? 'root'),
+    'pass' => getenv('DB_PASSWORD') ?: ($_ENV['DB_PASSWORD'] ?? ''),
     'charset' => 'utf8mb4',
     
     'options' => [
