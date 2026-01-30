@@ -13,11 +13,13 @@ import { Snippets } from './pages/snippets.js';
 import { Profile } from './pages/profile.js';
 import { Settings } from './pages/settings.js';
 import { Admin } from './pages/admin.js';
+import { Organizations } from './pages/organizations.js';
 import { SnippetViewer } from './pages/snippet-viewer.js';
 import SnippetEditor from './pages/snippet-editor.js';
 import NotificationSystem from './modules/components/notification-system.js';
 import CommandPalette from './modules/components/command-palette.js';
 import CodeVisualizer from './modules/components/code-visualizer.js';
+import ShortcutManager from './modules/components/shortcut-manager.js';
 
 class App {
     constructor() {
@@ -29,6 +31,7 @@ class App {
         this.auth = new Auth(this);
         this.notifications = new NotificationSystem();
         this.commandPalette = new CommandPalette();
+        this.shortcutManager = new ShortcutManager(this);
         this.visualizer = null; // Will be initialized when needed
         this.currentPage = null;
 
@@ -141,6 +144,22 @@ class App {
             await this.currentPage.init();
         }, { protected: true });
 
+        // Organization Routes
+        this.router.add('/organizations', async () => {
+            this.currentPage = new Organizations(this, 'list');
+            await this.currentPage.init();
+        }, { protected: true });
+
+        this.router.add('/organizations/new', async () => {
+            this.currentPage = new Organizations(this, 'create');
+            await this.currentPage.init();
+        }, { protected: true });
+
+        this.router.add('/organizations/:id', async (params) => {
+            this.currentPage = new Organizations(this, 'details', params);
+            await this.currentPage.init();
+        }, { protected: true });
+
         this.router.add('/admin', async () => {
             if (this.auth.user?.role !== 'admin') {
                 return this.router.navigate('/dashboard');
@@ -152,6 +171,20 @@ class App {
         // Starred route - redirect to dashboard which shows starred snippets
         this.router.add('/starred', async () => {
             this.router.navigate('/dashboard');
+        }, { protected: true });
+
+        this.router.add('/join/:token', async (params) => {
+            try {
+                const response = await this.apiClient.post('/collaboration/join_invite', { token: params.token });
+                if (response.success) {
+                    // Navigate to editor for the snippet with join token
+                    const session = response.data;
+                    this.router.navigate(`/editor/${session.snippet_id}?join_token=${params.token}`);
+                }
+            } catch (error) {
+                this.showError('Invalid or expired invite link');
+                this.router.navigate('/dashboard');
+            }
         }, { protected: true });
 
         this.router.add('/new', async () => {
