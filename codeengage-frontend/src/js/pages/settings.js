@@ -35,9 +35,8 @@ export class Settings {
                             <div class="md:col-span-1">
                                 <nav class="space-y-1">
                                     <button class="w-full text-left px-4 py-2 rounded-lg bg-primary/20 text-primary font-medium">Profile</button>
-                                    <button class="w-full text-left px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Account</button>
-                                    <button class="w-full text-left px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Appearance</button>
-                                    <button class="w-full text-left px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Notifications</button>
+                                    <button class="w-full text-left px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors" onclick="document.getElementById('security-section').scrollIntoView({behavior: 'smooth'})">Security</button>
+                                    <button class="w-full text-left px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors" onclick="document.getElementById('developer-section').scrollIntoView({behavior: 'smooth'})">Developer</button>
                                 </nav>
                             </div>
 
@@ -92,7 +91,7 @@ export class Settings {
                                     </div>
                                 </section>
 
-                                <!-- Appearance Section (Simplified) -->
+                                <!-- Appearance Section -->
                                 <section id="appearance-section" class="glass-panel p-6 border border-gray-700/50 rounded-xl">
                                     <h2 class="text-xl font-semibold text-white mb-6">Appearance</h2>
                                     <div class="flex items-center justify-between">
@@ -106,9 +105,60 @@ export class Settings {
                                         </div>
                                     </div>
                                 </section>
+                                
+                                <!-- Security Section -->
+                                <section id="security-section" class="glass-panel p-6 border border-gray-700/50 rounded-xl">
+                                    <h2 class="text-xl font-semibold text-white mb-6">Security</h2>
+                                    
+                                    <div class="space-y-6">
+                                        <div class="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                                            <div>
+                                                <h3 class="font-medium text-white">Active Sessions</h3>
+                                                <p class="text-sm text-gray-400">Manage device sessions active on your account.</p>
+                                            </div>
+                                            <button id="logout-all-btn" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors text-sm font-medium">
+                                                Log Out All Devices
+                                            </button>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- Developer Section -->
+                                <section id="developer-section" class="glass-panel p-6 border border-gray-700/50 rounded-xl">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-xl font-semibold text-white">API Keys</h2>
+                                        <button id="create-key-btn" class="px-3 py-1.5 rounded-lg bg-primary/20 text-primary text-sm font-medium hover:bg-primary/30 transition-colors">
+                                            + Generate Key
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="api-keys-list" class="space-y-3">
+                                        <p class="text-gray-400 text-sm">Loading API keys...</p>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- API Key Modal -->
+            <div id="api-key-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="document.getElementById('api-key-modal').classList.add('hidden')"></div>
+                <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full relative z-10 shadow-2xl">
+                    <h3 class="text-xl font-bold text-white mb-4">New API Key Generated</h3>
+                    <p class="text-sm text-gray-400 mb-4">Please copy this key now. It will not be shown again.</p>
+                    
+                    <div class="flex items-center gap-2 mb-6">
+                        <input type="text" id="new-api-key-display" readonly 
+                               class="flex-1 bg-black border border-gray-800 rounded px-3 py-2 text-neon-blue font-mono text-sm" />
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('new-api-key-display').value)" 
+                                class="p-2 bg-gray-800 rounded hover:bg-gray-700 text-gray-400 hover:text-white" title="Copy">
+                            <i class="ph ph-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <button class="w-full btn btn-primary" onclick="document.getElementById('api-key-modal').classList.add('hidden'); window.location.reload();">Done</button>
                 </div>
             </div>
         `;
@@ -119,10 +169,111 @@ export class Settings {
         if (saveBtn) {
             saveBtn.addEventListener('click', () => this.saveProfile());
         }
+
+        const logoutAllBtn = document.getElementById('logout-all-btn');
+        if (logoutAllBtn) {
+            logoutAllBtn.addEventListener('click', () => this.handleLogoutAll());
+        }
+
+        const createKeyBtn = document.getElementById('create-key-btn');
+        if (createKeyBtn) {
+            createKeyBtn.addEventListener('click', () => this.handleCreateKey());
+        }
     }
 
     loadSettings() {
-        // Here we could load settings if they were separate from the user object
+        this.loadApiKeys();
+    }
+
+    async loadApiKeys() {
+        try {
+            const list = document.getElementById('api-keys-list');
+            if (!list) return;
+
+            const response = await this.app.apiClient.get('/api-keys');
+            if (response.success) {
+                const keys = response.data;
+                if (!keys.length) {
+                    list.innerHTML = `<p class="text-sm text-gray-500 italic">No API keys generated yet.</p>`;
+                    return;
+                }
+
+                list.innerHTML = keys.map(key => `
+                    <div class="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                        <div>
+                            <p class="text-white font-medium text-sm">${key.name}</p>
+                            <p class="text-xs text-gray-500 font-mono mt-0.5">Created: ${new Date(key.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] uppercase tracking-wider text-gray-600 border border-gray-800 rounded px-1.5 py-0.5">
+                                ${key.last_used_at ? 'Actv: ' + new Date(key.last_used_at).toLocaleDateString() : 'Unused'}
+                            </span>
+                            <button class="text-red-400 hover:text-red-300 p-1" onclick="window.app.currentPage.deleteKey(${key.id})">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Failed to load API keys:', error);
+        }
+    }
+
+    async handleCreateKey() {
+        const name = prompt('Enter a name for this API Key (e.g. "CI/CD Pipeline"):', 'My API Key');
+        if (!name) return;
+
+        try {
+            const response = await this.app.apiClient.post('/api-keys', { name });
+            if (response.success) {
+                const newKey = response.data.key;
+                const modal = document.getElementById('api-key-modal');
+                const display = document.getElementById('new-api-key-display');
+                if (modal && display) {
+                    display.value = newKey;
+                    modal.classList.remove('hidden');
+                }
+            } else {
+                this.app.showError(response.message || 'Failed to create key');
+            }
+        } catch (error) {
+            console.error('Create key error:', error);
+            this.app.showError('Failed to create API key');
+        }
+    }
+
+    async deleteKey(id) {
+        if (!confirm('Are you sure you want to revoke this API key? Applications using it will stop working.')) return;
+
+        try {
+            const response = await this.app.apiClient.delete(`/api-keys/${id}`);
+            if (response.success) {
+                this.app.showSuccess('API Key revoked');
+                this.loadApiKeys();
+            } else {
+                this.app.showError('Failed to revoke key');
+            }
+        } catch (error) {
+            console.error('Delete key error:', error);
+            this.app.showError('Error revoking key');
+        }
+    }
+
+    async handleLogoutAll() {
+        if (!confirm('Are you sure you want to log out of all devices? You will be redirected to login.')) return;
+
+        try {
+            // Call backend with ?all=true
+            await this.app.apiClient.post('/auth/logout?all=true');
+            // Clear local session
+            this.app.auth.logout(); // This clears local storage and redirects
+        } catch (error) {
+            console.error('Logout all error', error);
+            this.app.showError('Logout failed');
+            // Force local logout anyway
+            this.app.auth.logout();
+        }
     }
 
     async saveProfile() {
