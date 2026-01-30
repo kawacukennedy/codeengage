@@ -110,19 +110,21 @@ class ExportService
         }
 
         $latestVersion = $this->versionRepository->findLatestBySnippetId($snippetId);
+        $code = $latestVersion ? $latestVersion->getCode() : '';
+        $abbreviation = $this->generatePrefix($snippet->getTitle());
+        $description = $snippet->getDescription() ?? $snippet->getTitle();
 
-        $template = "<template name=\"" . SecurityHelper::escapeHtml($snippet->getTitle()) . "\" ";
-        $template .= "value=\"" . SecurityHelper::escapeHtml($this->generatePrefix($snippet->getTitle())) . "\" ";
-        $template .= "description=\"" . SecurityHelper::escapeHtml($snippet->getDescription() ?? '') . "\" ";
+        // Correct Live Template format:
+        // name = abbreviation
+        // value = code
+        $template = "<template name=\"" . SecurityHelper::escapeHtml($abbreviation) . "\" ";
+        $template .= "value=\"" . SecurityHelper::escapeHtml($code) . "\" ";
+        $template .= "description=\"" . SecurityHelper::escapeHtml($description) . "\" ";
         $template .= "toReformat=\"true\" toShortenFQNames=\"true\">\n";
 
-        $template .= "  <variable name=\"VAR\" expression=\"\" defaultValue=\"\"\" alwaysStopAt=\"true\" />\n";
         $template .= "  <context>\n";
         $template .= "    <option name=\"{$this->getJetBrainsContext($snippet->getLanguage())}\" value=\"true\" />\n";
         $template .= "  </context>\n";
-        $template .= "  <script language=\"{$this->getJetBrainsLanguage($snippet->getLanguage())}\"><![CDATA[\n";
-        $template .= SecurityHelper::escapeHtml($latestVersion ? $latestVersion->getCode() : '');
-        $template .= "\n]]></script>\n";
         $template .= "</template>\n";
 
         return $template;
