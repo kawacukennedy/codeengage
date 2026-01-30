@@ -10,10 +10,10 @@
       "Hybrid (frontend on Netlify/Vercel, backend on shared hosting)"
     ],
     "key_innovations": [
-      "Real-time collaboration without WebSockets",
-      "Intelligent code analysis",
-      "Developer productivity suite",
-      "Gamification and learning features",
+      "Real-time collaboration without WebSockets (HTTP Long Polling)",
+      "Intelligent code analysis (Cyclomatic complexity, Security scanning)",
+      "Developer productivity suite (Command Palette, CodeMirror 6)",
+      "Gamification and learning features (Badges, Leaderboards)",
       "All features work on free-tier hosting"
     ]
   },
@@ -23,37 +23,37 @@
     "complete_structure": {
       "frontend": {
         "public": [
-          "index.html (SPA entry point)",
+          "index.html",
           "favicon.ico",
-          "manifest.json (PWA)",
+          "manifest.json",
           "robots.txt",
-          ".htaccess (for Apache rewrites)"
+          ".htaccess"
         ],
         "src": {
           "css": [
-            "main.css (compiled Tailwind)",
+            "main.css",
             "syntax-highlighting.css",
             "animations.css"
           ],
           "js": {
             "modules": {
               "api": [
-                "api-client.js (Axios-like wrapper)",
-                "auth-manager.js (JWT/session handling)",
-                "websocket-polyfill.js (HTTP long polling)"
+                "api-client.js",
+                "auth-manager.js",
+                "websocket-polyfill.js"
               ],
               "components": [
-                "collaborative-editor.js (CodeMirror wrapper)",
+                "collaborative-editor.js",
                 "command-palette.js",
                 "code-visualizer.js",
                 "demo-sandbox.js",
                 "notification-system.js"
               ],
               "services": [
-                "offline-manager.js (Service Worker + IndexedDB)",
-                "shortcut-manager.js (Keyboard shortcuts)",
-                "analytics-worker.js (Web Worker for code analysis)",
-                "cache-manager.js (Predictive caching)"
+                "offline-manager.js",
+                "shortcut-manager.js",
+                "analytics-worker.js",
+                "cache-manager.js"
               ],
               "utils": [
                 "form-validator.js",
@@ -69,10 +69,11 @@
               "profile.js",
               "admin.js",
               "login.js",
-              "signup.js"
+              "signup.js",
+              "organization.js"
             },
-            "app.js (Main application bootstrap)",
-            "router.js (Client-side routing)"
+            "app.js",
+            "router.js"
           },
           "templates": {
             "components": [
@@ -90,87 +91,60 @@
               "admin.html",
               "login.html",
               "signup.html",
+              "organization.html",
               "health.html"
             }
           }
-        },
-        "assets": {
-          "fonts": [
-            "Inter-Variable.woff2",
-            "JetBrainsMono-Variable.woff2",
-            "PlusJakartaSans-Bold.woff2"
-          ],
-          "icons": {
-            "phosphor-icons": [
-              "regular/",
-              "fill/",
-              "duotone/"
-            ],
-            "custom": [
-              "badges/",
-              "achievements/",
-              "tech-logos/"
-            ]
-          },
-          "svg": [
-            "logo.svg",
-            "logo-animated.svg",
-            "background-aurora.svg",
-            "grid-pattern.svg",
-            "noise-texture.png"
-          ]
         },
         "config": {
           "tailwind.config.js",
           "postcss.config.js",
           "service-worker.js",
           ".env.frontend"
-        },
-        "build": [
-          "package.json (with build scripts)",
-          "vite.config.js (or webpack)",
-          "build/ (compiled output)"
-        ]
+        }
       },
       "backend": {
         "public": [
-          "index.php (API entry point)",
-          ".htaccess (API routing)"
+          "index.php",
+          ".htaccess"
         ],
         "app": {
           "Controllers": {
             "Api": [
-              "AuthController.php (login, logout, register, token refresh)",
-              "SnippetController.php (CRUD operations, versions, tags)",
-              "CollaborationController.php (real-time updates, cursor sync)",
-              "AnalysisController.php (code analysis requests)",
-              "UserController.php (profile, preferences, achievements)",
-              "AdminController.php (users, audit logs, moderation)",
-              "ExportController.php (various format exports)",
-              "HealthController.php (system status)"
+              "AuthController.php",
+              "SnippetController.php",
+              "CollaborationController.php",
+              "AnalysisController.php",
+              "UserController.php",
+              "AdminController.php",
+              "ExportController.php",
+              "HealthController.php",
+              "OrganizationController.php"
             ]
           },
           "Services": {
-            "AuthService.php (complete authentication logic)",
-            "SnippetService.php (complete snippet management)",
-            "CollaborationService.php (real-time collaboration logic)",
-            "AnalysisService.php (code analysis algorithms)",
-            "GamificationService.php (achievements, points, leaderboards)",
-            "SearchService.php (intelligent search implementation)",
-            "ExportService.php (format conversion logic)",
-            "CacheService.php (intelligent caching strategy)"
+            "AuthService.php",
+            "SnippetService.php",
+            "CollaborationService.php",
+            "AnalysisService.php",
+            "GamificationService.php",
+            "SearchService.php",
+            "ExportService.php",
+            "CacheService.php",
+            "OrganizationService.php"
           },
           "Repositories": {
-            "UserRepository.php (complete user data access)",
-            "SnippetRepository.php (complete snippet data access)",
-            "CollaborationRepository.php (real-time session storage)",
-            "AnalysisRepository.php (analysis results storage)",
-            "AchievementRepository.php (gamification data)",
-            "AuditRepository.php (complete audit logging)"
+            "UserRepository.php",
+            "SnippetRepository.php",
+            "CollaborationRepository.php",
+            "AnalysisRepository.php",
+            "AchievementRepository.php",
+            "AuditRepository.php",
+            "OrganizationRepository.php"
           },
           "Models": {
-            "User.php (complete model with methods)",
-            "Snippet.php (complete model with versioning)",
+            "User.php",
+            "Snippet.php",
             "SnippetVersion.php",
             "Tag.php",
             "Organization.php",
@@ -181,104 +155,324 @@
             "CollaborationSession.php"
           },
           "Middleware": {
-            "AuthMiddleware.php (JWT/session validation)",
-            "CorsMiddleware.php (CORS headers management)",
-            "RateLimitMiddleware.php (IP-based rate limiting)",
-            "CsrfMiddleware.php (API CSRF protection)",
-            "RoleMiddleware.php (RBAC enforcement)",
-            "CollaborationMiddleware.php (real-time session handling)",
-            "CacheMiddleware.php (response caching)"
-          },
-          "Exceptions": {
-            "ApiException.php",
-            "ValidationException.php",
-            "NotFoundException.php",
-            "UnauthorizedException.php"
+            "AuthMiddleware.php",
+            "CorsMiddleware.php",
+            "RateLimitMiddleware.php",
+            "CsrfMiddleware.php",
+            "RoleMiddleware.php",
+            "CollaborationMiddleware.php",
+            "CacheMiddleware.php"
           },
           "Helpers": {
-            "ApiResponse.php (standardized JSON responses)",
-            "ValidationHelper.php (input validation)",
-            "CodeHelper.php (code processing utilities)",
-            "SecurityHelper.php (security utilities)",
-            "FormatHelper.php (export formatting)"
+            "ApiResponse.php",
+            "ValidationHelper.php",
+            "CodeHelper.php",
+            "SecurityHelper.php",
+            "FormatHelper.php"
           }
         },
         "config": {
-          "database.php (DB configuration)",
-          "app.php (application settings)",
-          "cache.php (cache configuration)",
-          "auth.php (authentication settings)",
-          "api.php (API rate limits, CORS)",
-          ".env (environment variables)"
-        },
-        "migrations": [
-          "001_create_users_table.php",
-          "002_create_snippets_tables.php",
-          "003_create_collaboration_tables.php",
-          "004_create_analysis_tables.php",
-          "005_create_gamification_tables.php",
-          "006_create_audit_tables.php"
-        ],
-        "storage": {
-          "cache": [
-            "query/",
-            "api/",
-            "analysis/"
-          ],
-          "logs": [
-            "api.log",
-            "error.log",
-            "audit.log"
-          ],
-          "temp": [
-            "exports/",
-            "uploads/",
-            "collaboration/"
-          ]
-        },
-        "scripts": {
-          "database": [
-            "backup.php",
-            "migrate.php",
-            "seed.php"
-          ],
-          "maintenance": [
-            "cleanup-sessions.php",
-            "update-cache.php",
-            "calculate-leaderboards.php"
-          ]
-        },
-        "tests": {
-          "unit": [
-            "Services/",
-            "Models/"
-          ],
-          "integration": [
-            "Controllers/",
-            "Api/"
-          ]
-        }
-      },
-      "shared": {
-        "database_schema": "codeengage_schema.sql",
-        "documentation": [
-          "API_DOCUMENTATION.md",
-          "DEPLOYMENT_GUIDE.md",
-          "DEVELOPER_GUIDE.md"
-        ],
-        "deployment": {
-          "docker": [
-            "docker-compose.yml",
-            "Dockerfile.frontend",
-            "Dockerfile.backend"
-          ],
-          "infinityfree": [
-            "deploy-infinityfree.sh",
-            "htaccess-backend",
-            "htaccess-frontend"
-          ]
+          "database.php",
+          "app.php",
+          "cache.php",
+          "auth.php",
+          "api.php",
+          ".env"
         }
       }
+    }
+  },
+  "features": {
+    "1_core_platform": {
+      "auth_security": {
+        "backend": [
+          "JWT refresh token rotation",
+          "Session invalidation on password change",
+          "Email verification flow (token generation + expiry)",
+          "Password reset workflow (email -> token -> reset)",
+          "Login attempt throttling + account lockout",
+          "Device/session tracking (active sessions list)",
+          "CSRF protection",
+          "Secure API key generation & revocation"
+        ],
+        "frontend": [
+          "Email verification UI",
+          "Password reset screens",
+          "Active session management UI",
+          "Security settings panel",
+          "Password strength meter"
+        ]
+      },
+      "profiles": {
+        "backend": [
+          "User preference persistence",
+          "Avatar upload + validation + storage",
+          "Activity history aggregation",
+          "Public/private profile logic"
+        ],
+        "frontend": [
+          "Profile editor with live preview",
+          "Preferences UI (theme, editor mode)",
+          "Activity timeline visualization",
+          "Public profile showcase"
+        ]
+      }
+    },
+    "2_snippet_management": {
+      "lifecycle": {
+        "backend": [
+          "Soft-delete + Restore",
+          "Permanent delete (admin)",
+          "Duplication/Forking lineage",
+          "Ownership transfer",
+          "Visibility enforcement",
+          "Locking during collaboration",
+          "View count tracking (debounced)",
+          "Star/unstar logic"
+        ],
+        "frontend": [
+          "Create/Edit UI",
+          "Fork UI with attribution",
+          "Visibility selector",
+          "Star button + count",
+          "Restore flow",
+          "Ownership badges"
+        ]
+      },
+      "versioning": {
+        "backend": [
+          "Auto-increment version on edit",
+          "Checksum deduplication",
+          "Version rollback support",
+          "Version metadata"
+        ],
+        "frontend": [
+          "Version timeline slider",
+          "Side-by-side diff viewer",
+          "Rollback confirmation",
+          "Change summary editor"
+        ]
+      }
+    },
+    "3_collaboration": {
+      "sessions": {
+        "backend": [
+          "Session token generation",
+          "Participant join/leave tracking",
+          "Cursor position storage",
+          "Three-way merge conflict resolution",
+          "Long-poll update queue",
+          "EventSource fallback",
+          "Session expiration cleanup"
+        ],
+        "frontend": [
+          "Live cursor rendering",
+          "Participant avatar stack",
+          "Join modal",
+          "Conflict resolution UI",
+          "Status indicator",
+          "Polling retry/backoff"
+        ]
+      },
+      "chat": {
+        "backend": [
+          "Message persistence",
+          "Snippet-line references",
+          "Mentions parsing"
+        ],
+        "frontend": [
+          "Chat panel UI",
+          "Code reference highlighting",
+          "Mention notifications"
+        ]
+      }
+    },
+    "4_editor_productivity": {
+      "advanced_editor": {
+        "frontend": [
+          "CodeMirror 6 integration",
+          "Themes (Dracula, Nord, Monokai)",
+          "Minimap",
+          "Region folding",
+          "Cursor animation",
+          "Markdown split preview",
+          "Focus mode",
+          "Shortcuts manager"
+        ]
+      },
+      "command_palette": {
+        "frontend": [
+          "Ctrl/Cmd+K trigger",
+          "Fuzzy search",
+          "Command registry",
+          "Keyboard navigation",
+          "Recent history"
+        ]
+      }
+    },
+    "5_code_analysis": {
+      "backend": [
+        "Cyclomatic complexity calculator",
+        "Regex vulnerability scanner",
+        "Performance anti-pattern detection",
+        "Duplicate code detection",
+        "Code smell heuristics",
+        "Result caching",
+        "History persistence"
+      ],
+      "frontend": [
+        "Analysis trigger UI",
+        "Results visualization",
+        "Inline annotations",
+        "Complexity meter"
+      ]
+    },
+    "6_search_discovery": {
+      "search": {
+        "backend": [
+          "MySQL FULLTEXT",
+          "Semantic n-gram similarity",
+          "Tag filtering",
+          "Popularity ranking",
+          "Sorting"
+        ],
+        "frontend": [
+          "Search bar + suggestions",
+          "Filter panel",
+          "Sort selector",
+          "Infinite scroll"
+        ]
+      },
+      "graph": {
+        "backend": [
+          "Relationship scoring",
+          "Edge strength"
+        ],
+        "frontend": [
+          "Graph visualization (D3/Canvas)",
+          "Interactive navigation"
+        ]
+      }
+    },
+    "7_gamification": {
+      "backend": [
+        "Event triggers",
+        "Badge tier logic",
+        "Points aggregation",
+        "Leaderboards"
+      ],
+      "frontend": [
+        "Unlock animations",
+        "Badge showcase",
+        "Leaderboard pages",
+        "Progress bars"
+      ]
+    },
+    "8_organizations": {
+      "backend": [
+        "Org creation",
+        "Invitations",
+        "Role enforcement",
+        "Visibility rules",
+        "Settings"
+      ],
+      "frontend": [
+        "Org dashboard",
+        "Member management",
+        "Role controls",
+        "Theme preview"
+      ]
+    },
+    "9_export": {
+      "backend": [
+        "Markdown",
+        "VS Code snippets",
+        "JetBrains templates",
+        "Gist sync",
+        "ZIP batch",
+        "Scheduled cron"
+      ],
+      "frontend": [
+        "Export modal",
+        "Format selection",
+        "Progress feedback",
+        "Download history"
+      ]
+    },
+    "10_admin": {
+      "backend": [
+        "Moderation tools",
+        "Role assignment",
+        "Takedowns",
+        "Audit logs",
+        "Cache clearing",
+        "Health checks"
+      ],
+      "frontend": [
+        "Admin tables",
+        "Audit viewer",
+        "Health dashboard",
+        "Cache controls"
+      ]
+    },
+    "11_security": {
+      "backend": [
+        "Input sanitization",
+        "Output escaping",
+        "Rate-limiting",
+        "CSP headers",
+        "Malware scanning hook",
+        "IP reputation"
+      ],
+      "frontend": [
+        "Secure cookies",
+        "XSS-safe rendering"
+      ]
+    },
+    "12_performance_offline": {
+      "frontend": [
+        "Service Worker",
+        "IndexedDB caching",
+        "Offline editing",
+        "Predictive prefetch",
+        "Skeleton loaders"
+      ],
+      "backend": [
+        "Query EXPLAIN tuning",
+        "Composite indexes",
+        "File-based cache",
+        "APCu",
+        "OPcache preload"
+      ]
+    },
+    "13_observability": {
+      "backend": [
+        "Structured JSON logging",
+        "Slow query detection",
+        "API latency tracking",
+        "Error classification"
+      ],
+      "frontend": [
+        "Error boundary",
+        "Friendly error states"
+      ]
+    },
+    "14_devops": {
+      "infrastructure": [
+        "Deployment scripts",
+        "Cloudflare cache rules",
+        "Cron setup",
+        "Backup automation",
+        "Rollback scripts"
+      ]
+    },
+    "15_documentation": {
+      "dx": [
+        "API docs generation",
+        "Architecture diagrams",
+        "Contribution guidelines",
+        "Setup walkthroughs"
+      ]
     }
   },
   "database_schema": {
@@ -366,6 +560,7 @@
           "session_token VARCHAR(64) UNIQUE NOT NULL",
           "participants JSON DEFAULT (JSON_ARRAY())",
           "cursor_positions JSON DEFAULT (JSON_OBJECT())",
+          "messages JSON DEFAULT (JSON_ARRAY())",
           "last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
           "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
           "FOREIGN KEY (snippet_id) REFERENCES snippets(id) ON DELETE CASCADE"
@@ -374,65 +569,6 @@
           "INDEX idx_collab_sessions_token (session_token)",
           "INDEX idx_collab_sessions_snippet (snippet_id)",
           "INDEX idx_collab_sessions_activity (last_activity)"
-        ]
-      },
-      "code_analyses": {
-        "columns": [
-          "id INT AUTO_INCREMENT PRIMARY KEY",
-          "snippet_version_id INT NOT NULL",
-          "analysis_type VARCHAR(50) NOT NULL",
-          "complexity_score DECIMAL(5,2)",
-          "security_issues JSON DEFAULT (JSON_ARRAY())",
-          "performance_suggestions JSON DEFAULT (JSON_ARRAY())",
-          "code_smells JSON DEFAULT (JSON_ARRAY())",
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-          "FOREIGN KEY (snippet_version_id) REFERENCES snippet_versions(id) ON DELETE CASCADE"
-        ],
-        "indexes": [
-          "INDEX idx_code_analyses_version (snippet_version_id)",
-          "INDEX idx_code_analyses_type (analysis_type, created_at DESC)"
-        ]
-      },
-      "achievements": {
-        "columns": [
-          "id INT AUTO_INCREMENT PRIMARY KEY",
-          "user_id INT NOT NULL",
-          "badge_type VARCHAR(50) NOT NULL",
-          "badge_name VARCHAR(100) NOT NULL",
-          "badge_description TEXT",
-          "badge_icon VARCHAR(100)",
-          "points_awarded INT DEFAULT 0",
-          "metadata JSON DEFAULT (JSON_OBJECT())",
-          "earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
-        ],
-        "indexes": [
-          "INDEX idx_achievements_user (user_id, earned_at DESC)",
-          "INDEX idx_achievements_type (badge_type)"
-        ]
-      },
-      "tags": {
-        "columns": [
-          "id INT AUTO_INCREMENT PRIMARY KEY",
-          "name VARCHAR(50) NOT NULL",
-          "slug VARCHAR(50) UNIQUE NOT NULL",
-          "description TEXT",
-          "usage_count INT DEFAULT 0",
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-        ],
-        "indexes": [
-          "INDEX idx_tags_slug (slug)",
-          "INDEX idx_tags_usage (usage_count DESC)"
-        ]
-      },
-      "snippet_tags": {
-        "columns": [
-          "snippet_id INT NOT NULL",
-          "tag_id INT NOT NULL",
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-          "PRIMARY KEY (snippet_id, tag_id)",
-          "FOREIGN KEY (snippet_id) REFERENCES snippets(id) ON DELETE CASCADE",
-          "FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE"
         ]
       },
       "organizations": {
@@ -460,42 +596,6 @@
           "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
         ]
       },
-      "roles": {
-        "columns": [
-          "id INT AUTO_INCREMENT PRIMARY KEY",
-          "name VARCHAR(50) UNIQUE NOT NULL",
-          "description TEXT",
-          "is_system_role BOOLEAN DEFAULT FALSE",
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-        ]
-      },
-      "permissions": {
-        "columns": [
-          "id INT AUTO_INCREMENT PRIMARY KEY",
-          "name VARCHAR(100) UNIQUE NOT NULL",
-          "description TEXT",
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-        ]
-      },
-      "user_roles": {
-        "columns": [
-          "user_id INT NOT NULL",
-          "role_id INT NOT NULL",
-          "assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-          "PRIMARY KEY (user_id, role_id)",
-          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
-          "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE"
-        ]
-      },
-      "role_permissions": {
-        "columns": [
-          "role_id INT NOT NULL",
-          "permission_id INT NOT NULL",
-          "PRIMARY KEY (role_id, permission_id)",
-          "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE",
-          "FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE"
-        ]
-      },
       "audit_logs": {
         "columns": [
           "id INT AUTO_INCREMENT PRIMARY KEY",
@@ -513,493 +613,400 @@
         ],
         "indexes": [
           "INDEX idx_audit_logs_actor (actor_id, created_at DESC)",
-          "INDEX idx_audit_logs_entity (entity_type, entity_id)",
           "INDEX idx_audit_logs_action (action_type, created_at DESC)"
         ]
-      },
-      "login_attempts": {
-        "columns": [
-          "id INT AUTO_INCREMENT PRIMARY KEY",
-          "user_id INT NULL",
-          "ip_address VARCHAR(45) NOT NULL",
-          "attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-          "success BOOLEAN DEFAULT FALSE",
-          "user_agent TEXT",
-          "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL"
-        ],
-        "indexes": [
-          "INDEX idx_login_attempts_ip (ip_address, attempt_time DESC)",
-          "INDEX idx_login_attempts_user (user_id, attempt_time DESC)"
-        ]
-      },
-      "snippet_relationships": {
-        "columns": [
-          "source_snippet_id INT NOT NULL",
-          "target_snippet_id INT NOT NULL",
-          "relationship_type VARCHAR(50) NOT NULL",
-          "strength DECIMAL(3,2) DEFAULT 1.0",
-          "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-          "PRIMARY KEY (source_snippet_id, target_snippet_id, relationship_type)",
-          "FOREIGN KEY (source_snippet_id) REFERENCES snippets(id) ON DELETE CASCADE",
-          "FOREIGN KEY (target_snippet_id) REFERENCES snippets(id) ON DELETE CASCADE"
-        ]
       }
-    }
-  },
-  "backend_logic_details": {
-    "authentication_system": {
-      "flow": "Session-based with JWT alternative for API",
-      "password_hashing": "PASSWORD_ARGON2ID with cost factor 12",
-      "session_management": "Regenerated on privilege change, HttpOnly + Secure cookies",
-      "rate_limiting": "Exponential backoff per IP and per account",
-      "login_attempts": "Tracked with 5-minute lockout after 5 failures"
-    },
-    "snippet_management": {
-      "versioning": "Each edit creates new version with incremental version_number",
-      "soft_delete": "All deletes use deleted_at timestamp",
-      "forking": "Creates new snippet with forked_from_id reference",
-      "templating": "Templates can have variables replaced on instantiation",
-      "audit_trail": "All changes logged to audit_logs with old/new values"
-    },
-    "collaboration_system": {
-      "real_time_implementation": "HTTP Long Polling with EventSource fallback",
-      "session_handling": "Unique session_token for each collaboration session",
-      "participant_management": "JSON array of user IDs with join/leave timestamps",
-      "cursor_sync": "JSON object mapping user_id to {line, ch} positions",
-      "conflict_resolution": "Three-way merge algorithm for concurrent edits",
-      "cleanup": "Sessions auto-delete after 24 hours inactivity"
-    },
-    "code_analysis": {
-      "complexity_calculation": "Cyclomatic complexity via control flow analysis",
-      "security_scanning": "Regex patterns for SQLi, XSS, path traversal",
-      "performance_analysis": "Identifies nested loops, expensive operations",
-      "code_smells": "Long methods, duplicate code detection via hashing",
-      "caching": "Analysis results cached to avoid recomputation"
-    },
-    "gamification_system": {
-      "achievement_triggers": "Event-based triggers for user actions",
-      "points_system": "Weighted points based on action importance",
-      "leaderboards": "Daily, weekly, monthly, all-time rankings",
-      "badge_progression": "Tiered badges (bronze, silver, gold)",
-      "notifications": "Real-time badge award notifications"
-    },
-    "search_system": {
-      "fulltext_search": "MySQL FULLTEXT on titles, descriptions, code",
-      "semantic_search": "n-gram similarity for code functionality matching",
-      "filters": "Language, tags, date ranges, complexity scores",
-      "sorting": "Relevance, recency, popularity, complexity"
-    },
-    "caching_strategy": {
-      "layers": [
-        "Cloudflare edge cache for public snippets",
-        "PHP APCu for authenticated user data",
-        "File cache for expensive queries",
-        "Browser cache for static assets"
-      ],
-      "invalidation": "Tag-based invalidation on write operations",
-      "predictive_caching": "Prefetch based on user behavior patterns"
-    },
-    "export_system": {
-      "formats": [
-        "JSON (full metadata)",
-        "Markdown (with syntax highlighting)",
-        "VS Code snippets (.code-snippets)",
-        "JetBrains live templates",
-        "GitHub Gist synchronization",
-        "HTML embed widgets"
-      ],
-      "batch_operations": "Export multiple snippets as zip archive",
-      "scheduled_exports": "Via cron jobs for organizations"
-    }
-  },
-  "frontend_pages_and_designs": {
-    "dashboard_page": {
-      "layout": "Responsive Bento Grid layout",
-      "sections": [
-        "Welcome Hero with daily coding streak visualization",
-        "Key Metrics Cards (Glassmorphism style)",
-        "Recent Snippets Carousel",
-        "Activity Heatmap (GitHub style)",
-        "Community Trends / Leaderboard Ticker"
-      ],
-      "design": {
-        "theme": "Midnight Blue & Neon accents",
-        "style": "Glassmorphism with noise textures",
-        "typography": "Sans-serif headings, Monospace data values"
-      },
-      "interactions": [
-        "Drag-and-drop widget customization",
-        "Hover glow effects",
-        "Skeleton loading states",
-        "Animated count-up for statistics"
-      ]
-    },
-    "snippet_editor_page": {
-      "layout": "Immersive IDE-like layout (Sidebar | Editor | Context Panel)",
-      "editor_features": [
-        "CodeMirror 6 Custom Theme (Dracula/Nord/Monokai)",
-        "Smooth cursor animations & caret blinking",
-        "Minimap scrollbar",
-        "Collapsible region folding",
-        "Live markdown preview split-pane"
-      ],
-      "properties_panel": {
-        "style": "Floating glass panel or collapsible sidebar",
-        "elements": [
-          "Smart tag suggestion chips",
-          "Language icon selector",
-          "Visibility toggle switch with animation",
-          "Live collaboration avatars stack"
-        ]
-      },
-      "design": "Distraction-free focus mode, translucent UI elements"
-    },
-    "snippet_viewer_page": {
-      "layout": "Modern showcase layout (Hero header + Code Block + Metadata Rail)",
-      "code_display": [
-        "Rich syntax highlighting with ligatures",
-        "Floating action bar (Copy, Download, Raw)",
-        "Line highlighting and permalinks",
-        "Embedded terminal-like output preview"
-      ],
-      "side_panel": [
-        "Interactive version timeline slider",
-        "Comment threads with rich text support",
-        "Related snippets graph visualization"
-      ],
-      "design": "Clean, documentation-style readability, high contrast code blocks"
-    },
-    "collaboration_page": {
-      "layout": "Editor + participant sidebar + chat panel",
-      "features": [
-        "Real-time cursor sharing",
-        "Participant video/audio (WebRTC if available)",
-        "Collaborative chat with code references",
-        "Edit conflict resolution UI",
-        "Session recording playback"
-      ],
-      "design": "Multi-user color coding, animated cursor trails"
-    },
-    "profile_page": {
-      "layout": "Tabbed interface: Overview, Snippets, Achievements, Settings",
-      "sections": [
-        "User info with avatar upload",
-        "Activity timeline",
-        "Achievement showcase",
-        "Snippet statistics",
-        "API key management",
-        "Export data options"
-      ],
-      "design": "Personalized theme based on achievement level"
-    },
-    "admin_dashboard": {
-      "layout": "Metrics overview + management tables",
-      "sections": [
-        "System health metrics",
-        "User management with bulk actions",
-        "Snippet moderation queue",
-        "Audit log viewer with filtering",
-        "Organization management",
-        "Cache management controls"
-      ],
-      "design": "Data-heavy with charts and tables, export functionality"
-    },
-    "login_signup_pages": {
-      "layout": "Split screen (Product Showcase Art | Interactive Form)",
-      "features": [
-        "Social login with particle effects",
-        "Password strength visualizer (progress bar)",
-        "Animated form field labels (Floating labels)",
-        "Success confetti animation"
-      ],
-      "design": "Premium brand showcase, 3D illustrative elements"
-    },
-    "command_palette": {
-      "trigger": "Ctrl+K or Cmd+K",
-      "features": [
-        "Fuzzy search across snippets, users, commands",
-        "Quick actions without navigation",
-        "Recent items history",
-        "Command categories",
-        "Keyboard-only navigation"
-      ],
-      "design": "Centered modal with backdrop blur, dark theme"
-    },
-    "mobile_responsive": {
-      "breakpoints": [
-        "Mobile (< 640px): Bottom navigation bar app-like capability",
-        "Tablet (640px-1024px): Adaptive grid layouts",
-        "Desktop (> 1024px): Expanded multi-column views"
-      ],
-      "touch_interactions": [
-        "Swipe-to-action list items",
-        "Pull-to-refresh",
-        "Haptic feedback triggers (if supported)"
-      ]
-    },
-    "design_system_tokens": {
-      "colors": {
-        "primary": "Violet/Indigo gradients",
-        "background": "Deep Space Black (#0B0F19)",
-        "surface": "Translucent Grey (#1F293780)",
-        "accent": "Cyberpunk Neon (#00F0FF, #7000FF)"
-      },
-      "shadows": {
-        "card": "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
-        "glow": "0 0 20px rgba(112, 0, 255, 0.5)"
-      },
-      "radius": {
-        "default": "1rem (rounded-2xl)",
-        "button": "0.75rem (rounded-xl)"
-      }
-    }
-  },
-  "api_endpoints": {
-    "auth_endpoints": {
-      "POST /api/auth/login": "Authenticate user, return session",
-      "POST /api/auth/register": "Create new user account",
-      "POST /api/auth/logout": "Invalidate session",
-      "GET /api/auth/me": "Get current user info",
-      "POST /api/auth/refresh": "Refresh expired tokens"
-    },
-    "snippet_endpoints": {
-      "GET /api/snippets": "List snippets with filtering",
-      "POST /api/snippets": "Create new snippet",
-      "GET /api/snippets/{id}": "Get snippet details",
-      "PUT /api/snippets/{id}": "Update snippet",
-      "DELETE /api/snippets/{id}": "Soft delete snippet",
-      "POST /api/snippets/{id}/fork": "Fork snippet",
-      "GET /api/snippets/{id}/versions": "Get version history",
-      "POST /api/snippets/{id}/star": "Star/unstar snippet",
-      "GET /api/snippets/{id}/analyses": "Get code analyses"
-    },
-    "collaboration_endpoints": {
-      "POST /api/collaboration/sessions": "Create collaboration session",
-      "GET /api/collaboration/sessions/{token}": "Join session",
-      "POST /api/collaboration/sessions/{token}/updates": "Push updates",
-      "GET /api/collaboration/sessions/{token}/updates": "Poll for updates",
-      "DELETE /api/collaboration/sessions/{token}": "End session"
-    },
-    "user_endpoints": {
-      "GET /api/users/{id}": "Get user profile",
-      "PUT /api/users/{id}": "Update profile",
-      "GET /api/users/{id}/snippets": "Get user's snippets",
-      "GET /api/users/{id}/achievements": "Get user achievements",
-      "GET /api/users/leaderboard": "Get leaderboard"
-    },
-    "admin_endpoints": {
-      "GET /api/admin/users": "List all users",
-      "PUT /api/admin/users/{id}/roles": "Update user roles",
-      "GET /api/admin/audit-logs": "View audit logs",
-      "POST /api/admin/cache/clear": "Clear cache",
-      "GET /api/admin/health": "System health check"
-    }
-  },
-  "deployment_configuration": {
-    "infinityfree_backend": {
-      "requirements": [
-        "PHP 8.0+",
-        "MySQL 5.7+",
-        "HTTPS enabled"
-      ],
-      "setup_steps": [
-        "Upload backend files to InfinityFree hosting",
-        "Create MySQL database via phpMyAdmin",
-        "Import database schema",
-        "Configure .env file with database credentials",
-        "Set up cron jobs via cron-job.org for maintenance tasks"
-      ],
-      "configuration": {
-        "max_upload_size": "64M",
-        "memory_limit": "256M",
-        "max_execution_time": "120",
-        "session_lifetime": "7200"
-      }
-    },
-    "cloudflare_frontend": {
-      "deployment_options": [
-        "Cloudflare Pages (static hosting)",
-        "Netlify (free tier)",
-        "Vercel (free tier)",
-        "GitHub Pages"
-      ],
-      "setup_steps": [
-        "Build frontend with npm run build",
-        "Deploy to chosen static hosting",
-        "Configure API base URL",
-        "Set up custom domain with SSL",
-        "Configure redirects for client-side routing"
-      ]
-    },
-    "single_server_deployment": {
-      "setup": "Both frontend and backend on same InfinityFree account",
-      "configuration": {
-        "frontend_path": "/public_html",
-        "backend_path": "/public_html/api",
-        "shared_database": "Same MySQL instance",
-        ".htaccess_rules": "Rewrite API calls to backend, serve frontend for other routes"
-      }
-    },
-    "environment_variables": {
-      "frontend": {
-        "VITE_API_BASE_URL": "https://api.yourdomain.com",
-        "VITE_APP_NAME": "CodeEngage",
-        "VITE_APP_VERSION": "1.0.0",
-        "VITE_ENABLE_PWA": "true"
-      },
-      "backend": {
-        "APP_ENV": "production",
-        "APP_URL": "https://api.yourdomain.com",
-        "DB_HOST": "localhost",
-        "DB_NAME": "codeengage_db",
-        "DB_USER": "codeengage_user",
-        "DB_PASSWORD": "secure_password",
-        "SESSION_SECRET": "random_32_character_string",
-        "CACHE_DRIVER": "file",
-        "MAINTENANCE_MODE": "false"
-      }
-    }
-  },
-  "security_configuration": {
-    "input_validation": {
-      "snippet_code": "Max 1MB, UTF-8 encoding, no null bytes",
-      "user_input": "Trim, strip tags, length limits per field",
-      "file_uploads": "Only allow specific MIME types, scan for malware patterns"
-    },
-    "output_escaping": {
-      "html_context": "htmlspecialchars with ENT_QUOTES",
-      "json_context": "json_encode with JSON_HEX_TAG",
-      "javascript_context": "Custom escaping for JS templates"
-    },
-    "content_security_policy": {
-      "default_src": "'self'",
-      "script_src": "'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-      "style_src": "'self' 'unsafe-inline'",
-      "connect_src": "'self' api.yourdomain.com",
-      "frame_src": "'self' sandbox.yourdomain.com"
-    },
-    "session_security": {
-      "cookie_httponly": true,
-      "cookie_secure": true,
-      "cookie_samesite": "Lax",
-      "session_regenerate": true,
-      "session_timeout": 7200
-    },
-    "rate_limiting": {
-      "general": "100 requests/minute per IP",
-      "auth": "5 attempts/15 minutes per IP",
-      "api": "1000 requests/hour per user"
-    }
-  },
-  "performance_optimization": {
-    "frontend": {
-      "asset_optimization": [
-        "Tailwind CSS purged for production",
-        "JavaScript code splitting by route",
-        "SVG icons sprite sheet",
-        "Fonts subset and woff2 format",
-        "Lazy loading for images and below-fold content"
-      ],
-      "caching_strategy": [
-        "Service Worker for offline caching",
-        "IndexedDB for snippet data",
-        "LocalStorage for user preferences",
-        "Cache API for API responses"
-      ]
-    },
-    "backend": {
-      "database": [
-        "Query optimization with EXPLAIN analysis",
-        "Composite indexes for common queries",
-        "Query caching via MySQL query cache",
-        "Connection pooling with persistent connections"
-      ],
-      "php": [
-        "OPcache enabled with preloading",
-        "Realpath cache size increased",
-        "Output buffering for compression",
-        "Early gzip compression check"
-      ],
-      "caching_layers": [
-        "APCu for user session data",
-        "File cache for expensive computations",
-        "Cloudflare edge cache for public content",
-        "Browser cache headers optimized"
-      ]
-    }
-  },
-  "monitoring_and_maintenance": {
-    "health_checks": [
-      "Database connectivity",
-      "Filesystem writability",
-      "Cache functionality",
-      "API response times",
-      "Error rate monitoring"
-    ],
-    "logging": {
-      "error_logs": "Structured JSON to /storage/logs/error.log",
-      "access_logs": "Request/response logging",
-      "audit_logs": "All security-relevant actions",
-      "performance_logs": "Slow queries, high memory usage"
-    },
-    "backup_strategy": {
-      "database": "Daily automated backups via cron-job.org",
-      "files": "Weekly backup of uploaded files",
-      "retention": "30 days for logs, 7 days for temp files",
-      "verification": "Monthly restore test from backups"
-    },
-    "cleanup_tasks": {
-      "daily": [
-        "Expired collaboration sessions",
-        "Old temporary files",
-        "Invalid cache entries"
-      ],
-      "weekly": [
-        "Soft-deleted records older than 30 days",
-        "Old audit logs (archive)",
-        "Orphaned file cleanup"
-      ],
-      "monthly": [
-        "Update leaderboard calculations",
-        "Database optimization",
-        "Security review"
-      ]
-    }
-  },
-  "development_workflow": {
-    "local_development": {
-      "requirements": [
-        "PHP 8.0+",
-        "Node.js 16+",
-        "MySQL 8.0",
-        "Git"
-      ],
-      "setup": [
-        "Clone repository",
-        "Run composer install (backend)",
-        "Run npm install (frontend)",
-        "Copy .env.example to .env",
-        "Run database migrations",
-        "Start development servers"
-      ],
-      "scripts": {
-        "dev:frontend": "npm run dev",
-        "dev:backend": "php -S localhost:8000 -t backend/public",
-        "build": "npm run build",
-        "test": "npm test && ./vendor/bin/phpunit"
-      }
-    },
-    "testing": {
-      "unit_tests": "PHPUnit for backend, Jest for frontend",
-      "integration_tests": "API endpoint testing",
-      "e2e_tests": "Cypress for critical user flows",
-      "performance_tests": "Lighthouse audits, load testing"
-    },
-    "deployment_pipeline": {
-      "staging": "Automatic deploy on push to develop branch",
-      "production": "Manual deploy from main branch",
-      "rollback": "Database migration rollback scripts",
-      "monitoring": "Error tracking via logs, uptime monitoring"
     }
   }
+}
+  "frontend_pages_and_designs": {
+  "dashboard_page": {
+    "layout": "Responsive Bento Grid layout",
+    "sections": [
+      "Welcome Hero with daily coding streak visualization",
+      "Key Metrics Cards (Glassmorphism style)",
+      "Recent Snippets Carousel",
+      "Activity Heatmap (GitHub style)",
+      "Community Trends / Leaderboard Ticker"
+    ],
+    "design": {
+      "theme": "Midnight Blue & Neon accents",
+      "style": "Glassmorphism with noise textures",
+      "typography": "Sans-serif headings, Monospace data values"
+    },
+    "interactions": [
+      "Drag-and-drop widget customization",
+      "Hover glow effects",
+      "Skeleton loading states",
+      "Animated count-up for statistics"
+    ]
+  },
+  "snippet_editor_page": {
+    "layout": "Immersive IDE-like layout (Sidebar | Editor | Context Panel)",
+    "editor_features": [
+      "CodeMirror 6 Custom Theme (Dracula/Nord/Monokai)",
+      "Smooth cursor animations & caret blinking",
+      "Minimap scrollbar",
+      "Collapsible region folding",
+      "Live markdown preview split-pane"
+    ],
+    "properties_panel": {
+      "style": "Floating glass panel or collapsible sidebar",
+      "elements": [
+        "Smart tag suggestion chips",
+        "Language icon selector",
+        "Visibility toggle switch with animation",
+        "Live collaboration avatars stack"
+      ]
+    },
+    "design": "Distraction-free focus mode, translucent UI elements"
+  },
+  "snippet_viewer_page": {
+    "layout": "Modern showcase layout (Hero header + Code Block + Metadata Rail)",
+    "code_display": [
+      "Rich syntax highlighting with ligatures",
+      "Floating action bar (Copy, Download, Raw)",
+      "Line highlighting and permalinks",
+      "Embedded terminal-like output preview"
+    ],
+    "side_panel": [
+      "Interactive version timeline slider",
+      "Comment threads with rich text support",
+      "Related snippets graph visualization"
+    ],
+    "design": "Clean, documentation-style readability, high contrast code blocks"
+  },
+  "collaboration_page": {
+    "layout": "Editor + participant sidebar + chat panel",
+    "features": [
+      "Real-time cursor sharing",
+      "Participant video/audio (WebRTC if available)",
+      "Collaborative chat with code references",
+      "Edit conflict resolution UI",
+      "Session recording playback"
+    ],
+    "design": "Multi-user color coding, animated cursor trails"
+  },
+  "profile_page": {
+    "layout": "Tabbed interface: Overview, Snippets, Achievements, Settings",
+    "sections": [
+      "User info with avatar upload",
+      "Activity timeline",
+      "Achievement showcase",
+      "Snippet statistics",
+      "API key management",
+      "Export data options"
+    ],
+    "design": "Personalized theme based on achievement level"
+  },
+  "admin_dashboard": {
+    "layout": "Metrics overview + management tables",
+    "sections": [
+      "System health metrics",
+      "User management with bulk actions",
+      "Snippet moderation queue",
+      "Audit log viewer with filtering",
+      "Organization management",
+      "Cache management controls"
+    ],
+    "design": "Data-heavy with charts and tables, export functionality"
+  },
+  "login_signup_pages": {
+    "layout": "Split screen (Product Showcase Art | Interactive Form)",
+    "features": [
+      "Social login with particle effects",
+      "Password strength visualizer (progress bar)",
+      "Animated form field labels (Floating labels)",
+      "Success confetti animation"
+    ],
+    "design": "Premium brand showcase, 3D illustrative elements"
+  },
+  "command_palette": {
+    "trigger": "Ctrl+K or Cmd+K",
+    "features": [
+      "Fuzzy search across snippets, users, commands",
+      "Quick actions without navigation",
+      "Recent items history",
+      "Command categories",
+      "Keyboard-only navigation"
+    ],
+    "design": "Centered modal with backdrop blur, dark theme"
+  },
+  "mobile_responsive": {
+    "breakpoints": [
+      "Mobile (< 640px): Bottom navigation bar app-like capability",
+      "Tablet (640px-1024px): Adaptive grid layouts",
+      "Desktop (> 1024px): Expanded multi-column views"
+    ],
+    "touch_interactions": [
+      "Swipe-to-action list items",
+      "Pull-to-refresh",
+      "Haptic feedback triggers (if supported)"
+    ]
+  },
+  "design_system_tokens": {
+    "colors": {
+      "primary": "Violet/Indigo gradients",
+      "background": "Deep Space Black (#0B0F19)",
+      "surface": "Translucent Grey (#1F293780)",
+      "accent": "Cyberpunk Neon (#00F0FF, #7000FF)"
+    },
+    "shadows": {
+      "card": "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
+      "glow": "0 0 20px rgba(112, 0, 255, 0.5)"
+    },
+    "radius": {
+      "default": "1rem (rounded-2xl)",
+      "button": "0.75rem (rounded-xl)"
+    }
+  }
+},
+"api_endpoints": {
+  "auth_endpoints": {
+    "POST /api/auth/login": "Authenticate user, return session",
+    "POST /api/auth/register": "Create new user account",
+    "POST /api/auth/logout": "Invalidate session",
+    "GET /api/auth/me": "Get current user info",
+    "POST /api/auth/refresh": "Refresh expired tokens"
+  },
+  "snippet_endpoints": {
+    "GET /api/snippets": "List snippets with filtering",
+    "POST /api/snippets": "Create new snippet",
+    "GET /api/snippets/{id}": "Get snippet details",
+    "PUT /api/snippets/{id}": "Update snippet",
+    "DELETE /api/snippets/{id}": "Soft delete snippet",
+    "POST /api/snippets/{id}/fork": "Fork snippet",
+    "GET /api/snippets/{id}/versions": "Get version history",
+    "POST /api/snippets/{id}/star": "Star/unstar snippet",
+    "GET /api/snippets/{id}/analyses": "Get code analyses"
+  },
+  "collaboration_endpoints": {
+    "POST /api/collaboration/sessions": "Create collaboration session",
+    "GET /api/collaboration/sessions/{token}": "Join session",
+    "POST /api/collaboration/sessions/{token}/updates": "Push updates",
+    "GET /api/collaboration/sessions/{token}/updates": "Poll for updates",
+    "DELETE /api/collaboration/sessions/{token}": "End session"
+  },
+  "user_endpoints": {
+    "GET /api/users/{id}": "Get user profile",
+    "PUT /api/users/{id}": "Update profile",
+    "GET /api/users/{id}/snippets": "Get user's snippets",
+    "GET /api/users/{id}/achievements": "Get user achievements",
+    "GET /api/users/leaderboard": "Get leaderboard"
+  },
+  "admin_endpoints": {
+    "GET /api/admin/users": "List all users",
+    "PUT /api/admin/users/{id}/roles": "Update user roles",
+    "GET /api/admin/audit-logs": "View audit logs",
+    "POST /api/admin/cache/clear": "Clear cache",
+    "GET /api/admin/health": "System health check"
+  }
+},
+"deployment_configuration": {
+  "infinityfree_backend": {
+    "requirements": [
+      "PHP 8.0+",
+      "MySQL 5.7+",
+      "HTTPS enabled"
+    ],
+    "setup_steps": [
+      "Upload backend files to InfinityFree hosting",
+      "Create MySQL database via phpMyAdmin",
+      "Import database schema",
+      "Configure .env file with database credentials",
+      "Set up cron jobs via cron-job.org for maintenance tasks"
+    ],
+    "configuration": {
+      "max_upload_size": "64M",
+      "memory_limit": "256M",
+      "max_execution_time": "120",
+      "session_lifetime": "7200"
+    }
+  },
+  "cloudflare_frontend": {
+    "deployment_options": [
+      "Cloudflare Pages (static hosting)",
+      "Netlify (free tier)",
+      "Vercel (free tier)",
+      "GitHub Pages"
+    ],
+    "setup_steps": [
+      "Build frontend with npm run build",
+      "Deploy to chosen static hosting",
+      "Configure API base URL",
+      "Set up custom domain with SSL",
+      "Configure redirects for client-side routing"
+    ]
+  },
+  "single_server_deployment": {
+    "setup": "Both frontend and backend on same InfinityFree account",
+    "configuration": {
+      "frontend_path": "/public_html",
+      "backend_path": "/public_html/api",
+      "shared_database": "Same MySQL instance",
+      ".htaccess_rules": "Rewrite API calls to backend, serve frontend for other routes"
+    }
+  },
+  "environment_variables": {
+    "frontend": {
+      "VITE_API_BASE_URL": "https://api.yourdomain.com",
+      "VITE_APP_NAME": "CodeEngage",
+      "VITE_APP_VERSION": "1.0.0",
+      "VITE_ENABLE_PWA": "true"
+    },
+    "backend": {
+      "APP_ENV": "production",
+      "APP_URL": "https://api.yourdomain.com",
+      "DB_HOST": "localhost",
+      "DB_NAME": "codeengage_db",
+      "DB_USER": "codeengage_user",
+      "DB_PASSWORD": "secure_password",
+      "SESSION_SECRET": "random_32_character_string",
+      "CACHE_DRIVER": "file",
+      "MAINTENANCE_MODE": "false"
+    }
+  }
+},
+"security_configuration": {
+  "input_validation": {
+    "snippet_code": "Max 1MB, UTF-8 encoding, no null bytes",
+    "user_input": "Trim, strip tags, length limits per field",
+    "file_uploads": "Only allow specific MIME types, scan for malware patterns"
+  },
+  "output_escaping": {
+    "html_context": "htmlspecialchars with ENT_QUOTES",
+    "json_context": "json_encode with JSON_HEX_TAG",
+    "javascript_context": "Custom escaping for JS templates"
+  },
+  "content_security_policy": {
+    "default_src": "'self'",
+    "script_src": "'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+    "style_src": "'self' 'unsafe-inline'",
+    "connect_src": "'self' api.yourdomain.com",
+    "frame_src": "'self' sandbox.yourdomain.com"
+  },
+  "session_security": {
+    "cookie_httponly": true,
+    "cookie_secure": true,
+    "cookie_samesite": "Lax",
+    "session_regenerate": true,
+    "session_timeout": 7200
+  },
+  "rate_limiting": {
+    "general": "100 requests/minute per IP",
+    "auth": "5 attempts/15 minutes per IP",
+    "api": "1000 requests/hour per user"
+  }
+},
+"performance_optimization": {
+  "frontend": {
+    "asset_optimization": [
+      "Tailwind CSS purged for production",
+      "JavaScript code splitting by route",
+      "SVG icons sprite sheet",
+      "Fonts subset and woff2 format",
+      "Lazy loading for images and below-fold content"
+    ],
+    "caching_strategy": [
+      "Service Worker for offline caching",
+      "IndexedDB for snippet data",
+      "LocalStorage for user preferences",
+      "Cache API for API responses"
+    ]
+  },
+  "backend": {
+    "database": [
+      "Query optimization with EXPLAIN analysis",
+      "Composite indexes for common queries",
+      "Query caching via MySQL query cache",
+      "Connection pooling with persistent connections"
+    ],
+    "php": [
+      "OPcache enabled with preloading",
+      "Realpath cache size increased",
+      "Output buffering for compression",
+      "Early gzip compression check"
+    ],
+    "caching_layers": [
+      "APCu for user session data",
+      "File cache for expensive computations",
+      "Cloudflare edge cache for public content",
+      "Browser cache headers optimized"
+    ]
+  }
+},
+"monitoring_and_maintenance": {
+  "health_checks": [
+    "Database connectivity",
+    "Filesystem writability",
+    "Cache functionality",
+    "API response times",
+    "Error rate monitoring"
+  ],
+  "logging": {
+    "error_logs": "Structured JSON to /storage/logs/error.log",
+    "access_logs": "Request/response logging",
+    "audit_logs": "All security-relevant actions",
+    "performance_logs": "Slow queries, high memory usage"
+  },
+  "backup_strategy": {
+    "database": "Daily automated backups via cron-job.org",
+    "files": "Weekly backup of uploaded files",
+    "retention": "30 days for logs, 7 days for temp files",
+    "verification": "Monthly restore test from backups"
+  },
+  "cleanup_tasks": {
+    "daily": [
+      "Expired collaboration sessions",
+      "Old temporary files",
+      "Invalid cache entries"
+    ],
+    "weekly": [
+      "Soft-deleted records older than 30 days",
+      "Old audit logs (archive)",
+      "Orphaned file cleanup"
+    ],
+    "monthly": [
+      "Update leaderboard calculations",
+      "Database optimization",
+      "Security review"
+    ]
+  }
+},
+"development_workflow": {
+  "local_development": {
+    "requirements": [
+      "PHP 8.0+",
+      "Node.js 16+",
+      "MySQL 8.0",
+      "Git"
+    ],
+    "setup": [
+      "Clone repository",
+      "Run composer install (backend)",
+      "Run npm install (frontend)",
+      "Copy .env.example to .env",
+      "Run database migrations",
+      "Start development servers"
+    ],
+    "scripts": {
+      "dev:frontend": "npm run dev",
+      "dev:backend": "php -S localhost:8000 -t backend/public",
+      "build": "npm run build",
+      "test": "npm test && ./vendor/bin/phpunit"
+    }
+  },
+  "testing": {
+    "unit_tests": "PHPUnit for backend, Jest for frontend",
+    "integration_tests": "API endpoint testing",
+    "e2e_tests": "Cypress for critical user flows",
+    "performance_tests": "Lighthouse audits, load testing"
+  },
+  "deployment_pipeline": {
+    "staging": "Automatic deploy on push to develop branch",
+    "production": "Manual deploy from main branch",
+    "rollback": "Database migration rollback scripts",
+    "monitoring": "Error tracking via logs, uptime monitoring"
+  }
+}
 }
