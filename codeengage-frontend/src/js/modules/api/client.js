@@ -68,6 +68,12 @@ export class ApiClient {
             credentials: 'include'
         };
 
+        // Add CSRF token from cookie if available
+        const xsrfToken = getCookie('XSRF-TOKEN');
+        if (xsrfToken) {
+            config.headers['X-XSRF-TOKEN'] = xsrfToken;
+        }
+
         if (data && method !== 'GET') {
             config.body = JSON.stringify(data);
         }
@@ -261,5 +267,12 @@ export class ApiError extends Error {
 
 // Default instance
 export const apiClient = new ApiClient();
+
+// Helper to get cookie
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
 
 export default ApiClient;
