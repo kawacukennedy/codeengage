@@ -15,7 +15,7 @@ class CsrfMiddleware
     {
         $this->enabled = $config['enabled'] ?? true;
         $this->exemptMethods = $config['exempt_methods'] ?? ['GET', 'HEAD', 'OPTIONS'];
-        $this->exemptRoutes = $config['exempt_routes'] ?? ['/auth/login', '/auth/register'];
+        $this->exemptRoutes = $config['exempt_routes'] ?? ['/api/auth/login', '/api/auth/register', '/auth/login', '/auth/register'];
     }
 
     public function handle(): void
@@ -29,6 +29,8 @@ class CsrfMiddleware
 
         // Exempt certain methods and routes
         if (in_array($method, $this->exemptMethods) || $this->isRouteExempt($uri)) {
+            // Ensure cookie is set for valid sessions to allow subsequent non-safe requests
+            $this->setTokenCookie();
             return;
         }
 
