@@ -15,19 +15,6 @@ class CollaborationController
         $this->service = new CollaborationService($pdo);
     }
 
-    public function __call($name, $arguments)
-    {
-        // session management
-        // POST /sessions
-        if ($name === 'sessions' && $arguments[0] === 'POST') {
-             $this->create();
-             return;
-        }
-        // GET /sessions/{token}
-        // ... handled via custom routing if needed or simple ID assumptions
-    }
-    
-    // For standard routing where session token is passed as $params[0]
     public function sessions($method, $params)
     {
         if (empty($params)) {
@@ -48,12 +35,51 @@ class CollaborationController
             }
         } elseif ($subAction === 'join') {
             $this->join($token);
+        } elseif ($subAction === 'invite') {
+            $this->createInvite($token);
+        } elseif ($subAction === 'messages') {
+            if ($method === 'POST') {
+                $this->sendMessage($token);
+            } elseif ($method === 'GET') {
+                $this->getMessages($token);
+            }
+        } elseif ($subAction === 'lock') {
+            if ($method === 'POST') {
+                $this->lock($token);
+            }
+        } elseif ($subAction === 'unlock') {
+            if ($method === 'POST') {
+                $this->unlock($token);
+            }
         }
+    }
+    
+    public function join_invite($method, $params) {
+        $this->joinViaInvite();
+    }
+
+    private function createInvite($sessionToken)
+    {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $input = json_decode(file_get_contents('php://input'), true);
+        $permission = $input['permission'] ?? 'view';
+        
+        $link = $this->service->createInviteLink($sessionToken, $permission);
+        ApiResponse::success(['token' => $link, 'url' => "/join/{$link}"]); 
+    }
+
+    private function joinViaInvite()
+    {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $input = json_decode(file_get_contents('php://input'), true);
+        $inviteToken = $input['token'] ?? '';
+        
+        $result = $this->service->joinWithInvite($inviteToken, $userId);
+        ApiResponse::success($result);
     }
 
     private function create()
     {
-        session_start();
         $userId = $_SESSION['user_id'] ?? 0;
         $input = json_decode(file_get_contents('php://input'), true);
         
@@ -63,7 +89,6 @@ class CollaborationController
 
     private function join($token)
     {
-        session_start();
         $userId = $_SESSION['user_id'] ?? 0;
         $result = $this->service->joinSession($token, $userId);
         ApiResponse::success($result);
@@ -71,7 +96,6 @@ class CollaborationController
 
     private function push($token)
     {
-        session_start();
         $userId = $_SESSION['user_id'] ?? 0;
         $input = json_decode(file_get_contents('php://input'), true);
         $result = $this->service->pushUpdate($token, $input, $userId);
@@ -81,10 +105,42 @@ class CollaborationController
     private function poll($token)
     {
         $lastTs = $_GET['since'] ?? time();
-        // Since session writing might block, close it
         session_write_close();
         
         $result = $this->service->pollUpdates($token, $lastTs);
         ApiResponse::success($result ?? ['changed' => false]);
+    }
+
+    private function sendMessage($token)
+    {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (empty($input['message'])) {
+            ApiResponse::error('Message required', 400);
+        }
+        
+        $result = $this->service->sendMessage($token, $userId, $input['message'], $input['line_reference'] ?? null);
+        ApiResponse::success($result);
+    }
+
+    private function getMessages($token)
+    {
+        $messages = $this->service->getMessages($token, 50);
+        ApiResponse::success($messages);
+    }
+
+    private function lock($token)
+    {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $result = $this->service->acquireLock($token, $userId);
+        ApiResponse::success($result);
+    }
+
+    private function unlock($token)
+    {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $result = $this->service->releaseLock($token, $userId);
+        ApiResponse::success($result);
     }
 }

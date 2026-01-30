@@ -102,7 +102,7 @@ class CollaborationRepository
         $setClause = [];
         $params = [':id' => $id];
 
-        $allowedFields = ['participants', 'cursor_positions', 'last_activity'];
+        $allowedFields = ['participants', 'cursor_positions', 'last_activity', 'metadata'];
         
         foreach ($allowedFields as $field) {
             if (isset($data[$field])) {
@@ -364,5 +364,43 @@ class CollaborationRepository
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function storeMessage(int $sessionId, int $userId, string $message, ?int $lineReference = null): int
+    {
+        $sql = "
+            INSERT INTO chat_messages (session_id, user_id, message, line_reference, created_at)
+            VALUES (:session_id, :user_id, :message, :line_reference, NOW())
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':session_id' => $sessionId,
+            ':user_id' => $userId,
+            ':message' => $message,
+            ':line_reference' => $lineReference
+        ]);
+        
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function getMessages(int $sessionId, int $limit = 50, int $offset = 0): array
+    {
+        $sql = "
+            SELECT cm.*, u.username, u.display_name, u.avatar_url
+            FROM chat_messages cm
+            JOIN users u ON cm.user_id = u.id
+            WHERE cm.session_id = :session_id
+            ORDER BY cm.created_at DESC
+            LIMIT :limit OFFSET :offset
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':session_id', $sessionId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC)); // Return oldest first for UI
     }
 }
