@@ -26,6 +26,12 @@ class ApiClient {
             ...config
         };
 
+        // Add CSRF Token from cookie
+        const csrfToken = this.getCookie('XSRF-TOKEN');
+        if (csrfToken) {
+            options.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
+        }
+
         if (data) {
             if (data instanceof FormData) {
                 options.body = data;
@@ -93,7 +99,7 @@ class ApiClient {
     async upload(endpoint, file, additionalData = {}, config = {}) {
         const formData = new FormData();
         formData.append('file', file);
-        
+
         // Add additional form data
         Object.keys(additionalData).forEach(key => {
             formData.append(key, additionalData[key]);
@@ -124,6 +130,13 @@ class ApiClient {
     addResponseInterceptor(interceptor) {
         // Store interceptors to be called after each response
         this.responseInterceptor = interceptor;
+    }
+
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
     }
 }
 
