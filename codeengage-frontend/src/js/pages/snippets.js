@@ -4,6 +4,7 @@
  * Displays and manages the list of snippets with search, filtering, and pagination.
  */
 
+import seoManager from '../modules/utils/seo-manager.js';
 import Navigation from '../modules/components/navigation.js';
 
 export class Snippets {
@@ -29,6 +30,12 @@ export class Snippets {
      * Initialize the snippets page
      */
     async init() {
+        seoManager.update({
+            title: 'Explore Code Snippets',
+            description: 'Discover thousands of code snippets shared by the CodeEngage community. Search by language, tag, or popularity.',
+            keywords: 'search code, find snippets, code examples, programming',
+            url: window.location.href
+        });
         await this.loadSnippets();
         this.render();
         this.setupEventListeners();

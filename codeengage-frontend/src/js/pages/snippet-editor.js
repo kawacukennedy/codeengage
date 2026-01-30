@@ -1,5 +1,5 @@
 import Navigation from '../modules/components/navigation.js';
-import CollaborativeEditor from '../modules/components/collaborative-editor.js?v=2.0';
+import CollaborativeEditor from '../modules/components/collaborative-editor.js?v=2.1';
 
 export default class SnippetEditor {
     constructor(app, snippetId = null) {
@@ -36,6 +36,45 @@ export default class SnippetEditor {
 
         if (this.snippetId) {
             await this.loadSnippet();
+
+            // Check for join token
+            const urlParams = new URLSearchParams(window.location.search);
+            const joinToken = urlParams.get('join_token');
+            if (joinToken) {
+                await this.joinSession(joinToken);
+            }
+        }
+    }
+
+    async joinSession(token) {
+        // Guest flow
+        try {
+            // Validate/Join via API already done in app.js? 
+            // app.js called join_invite, which adds user to session.
+            // But CollaborativeEditor needs to connect (poll).
+
+            // We need to tell the editor to start collaborating with this token.
+            // But startCollaboration() currently creates a new session.
+            // We need a way to "connect" to existing session.
+
+            this.data.isCollaborating = true;
+            this.data.sessionToken = token; // Store regarding
+
+            // Wait for editor to be ready then connect
+            const checkEditor = setInterval(() => {
+                if (this.editor) {
+                    clearInterval(checkEditor);
+                    this.editor.sessionToken = token;
+                    this.editor.isCollaborating = true;
+                    this.editor.pollUpdates();
+                    this.editor.sendCursorPosition();
+                    this.updateCollaborationUI();
+                    window.app.showSuccess('Connected to collaboration session');
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error('Failed to auto-join:', error);
         }
     }
 
@@ -84,6 +123,11 @@ export default class SnippetEditor {
             mode: this.getLanguageMode(this.data.snippet?.language || 'javascript'),
             snippetId: this.snippetId,
             collaborate: this.data.isCollaborating,
+            theme: 'dracula', // Default
+            lineNumbers: true,
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+            matchBrackets: true,
             onSave: () => this.saveSnippet(),
             onRun: () => this.runAnalysis(),
             onReady: (editorInstance) => {
@@ -104,12 +148,32 @@ export default class SnippetEditor {
         const visibilitySelect = document.getElementById('snippet-visibility');
         const tagsInput = document.getElementById('snippet-tags');
 
-        if (titleInput) {
-            titleInput.addEventListener('input', () => {
-                this.hasUnsavedChanges = true;
-                this.updateSaveButton();
-            });
+        // Editor Toolbar
+        const themeSelect = document.getElementById('editor-theme');
+        const fontSizeSelect = document.getElementById('editor-font-size');
+        const focusModeBtn = document.getElementById('editor-focus-mode');
+
+        if (themeSelect) {
+            themeSelect.addEventListener('change', (e) => this.updateTheme(e.target.value));
         }
+
+        if (fontSizeSelect) {
+            fontSizeSelect.addEventListener('change', (e) => this.updateFontSize(e.target.value));
+        }
+
+        if (focusModeBtn) {
+            focusModeBtn.addEventListener('click', () => this.toggleFocusMode());
+        }
+
+        const previewBtn = document.getElementById('editor-preview');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', () => this.toggleMarkdownPreview());
+        }
+
+        titleInput.addEventListener('input', () => {
+            this.hasUnsavedChanges = true;
+            this.updateSaveButton();
+        });
 
         if (descriptionInput) {
             descriptionInput.addEventListener('input', () => {
@@ -567,9 +631,21 @@ export default class SnippetEditor {
             if (this.data.isCollaborating) {
                 button.innerHTML = 'Stop Collaboration';
                 button.className = 'bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors';
+
+                // Add Share Button if not exists
+                if (!document.getElementById('share-collab-btn')) {
+                    const shareBtn = document.createElement('button');
+                    shareBtn.id = 'share-collab-btn';
+                    shareBtn.className = 'bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors ml-2';
+                    shareBtn.innerHTML = '<i class="ph ph-share-network mr-2"></i>Share';
+                    shareBtn.onclick = () => this.generateInviteLink('view'); // Default to view
+                    button.parentNode.insertBefore(shareBtn, button.nextSibling);
+                }
             } else {
                 button.innerHTML = 'Start Collaboration';
                 button.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors';
+                const shareBtn = document.getElementById('share-collab-btn');
+                if (shareBtn) shareBtn.remove();
             }
         }
 
@@ -611,6 +687,54 @@ export default class SnippetEditor {
         URL.revokeObjectURL(url);
     }
 
+    async generateInviteLink(permission = 'view') {
+        if (!this.data.isCollaborating || !this.editor.sessionToken) {
+            this.app.showError('Must be in a collaboration session');
+            return;
+        }
+
+        try {
+            const response = await this.app.apiClient.post(`/collaboration/sessions/${this.editor.sessionToken}/invite`, {
+                permission
+            });
+
+            if (response.success) {
+                this.showInviteModal(response.data.url, permission);
+            }
+        } catch (error) {
+            console.error('Failed to generate invite:', error);
+            this.app.showError('Failed to generate invite link');
+        }
+    }
+
+    showInviteModal(path, permission) {
+        const fullUrl = `${window.location.origin}${path}`;
+
+        // Simple modal implementation
+        const modalHtml = `
+            <div id="invite-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 max-w-md w-full">
+                    <h3 class="text-xl font-bold text-white mb-4">Share Collaboration</h3>
+                    <p class="text-gray-400 mb-4">Share this link to invite others to <span class="text-white font-medium">${permission}</span> this snippet.</p>
+                    
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" readonly value="${fullUrl}" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 font-mono text-sm focus:outline-none">
+                        <button onclick="navigator.clipboard.writeText('${fullUrl}'); this.textContent='Copied!'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            Copy
+                        </button>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button onclick="document.getElementById('invite-modal').remove()" class="text-gray-400 hover:text-white transition-colors">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
     async runAnalysis() {
         if (!this.snippetId) {
             this.app.showError('Please save the snippet first');
@@ -622,6 +746,9 @@ export default class SnippetEditor {
 
             if (response.success) {
                 this.showAnalysisResults(response.data);
+                if (this.editor && response.data.issues) {
+                    this.editor.setAnnotations(response.data.issues);
+                }
                 this.app.showSuccess('Code analysis completed');
             }
         } catch (error) {
@@ -783,9 +910,32 @@ export default class SnippetEditor {
                                         <div class="flex items-center space-x-2">
                                             <div class="w-3 h-3 rounded-full bg-red-500"></div>
                                             <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                        </div>
-                                        <div class="h-4 w-px bg-gray-700"></div>
+                                            <div class="flex items-center gap-2">
+                             <div class="relative">
+                                <select id="editor-theme" class="bg-gray-700 border border-gray-600 text-white text-xs rounded px-2 py-1 focus:ring-1 focus:ring-primary focus:border-primary">
+                                    <option value="dracula">Dracula</option>
+                                    <option value="monokai">Monokai</option>
+                                    <option value="material">Material</option>
+                                    <option value="nord">Nord</option>
+                                </select>
+                            </div>
+                            <div class="relative">
+                                <select id="editor-font-size" class="bg-gray-700 border border-gray-600 text-white text-xs rounded px-2 py-1 focus:ring-1 focus:ring-primary focus:border-primary">
+                                    <option value="12px">12px</option>
+                                    <option value="14px" selected>14px</option>
+                                    <option value="16px">16px</option>
+                                    <option value="18px">18px</option>
+                                </select>
+                            </div>
+                            <button id="editor-focus-mode" title="Toggle Focus Mode" class="p-1 text-gray-400 hover:text-white rounded hover:bg-gray-700 transition-colors">
+                                <i class="ph ph-corners-out"></i>
+                            </button>
+                            <span class="w-px h-4 bg-gray-700 mx-1"></span>
+                            <span id="autosave-indicator" class="text-xs text-gray-500 min-w-[60px] text-right"></span>
+                        </div>
+                    </div>
+                    
+                    <div id="code-editor" class="h-[calc(100vh-320px)] border-b border-gray-700/50 text-base"></div>
                                         <select id="snippet-language" class="bg-transparent text-gray-300 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors">
                                             <option value="javascript">JavaScript</option>
                                             <option value="typescript">TypeScript</option>
@@ -871,16 +1021,7 @@ export default class SnippetEditor {
                                     </div>
                                 </div>
 
-                                <!-- Tags -->
-                                <div class="space-y-2">
-                                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider">Tags</label>
-                                    <div class="relative">
-                                        <input type="text" id="snippet-tags" 
-                                               class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
-                                               placeholder="Type and press comma to add tags...">
-                                    </div>
-                                    <div id="tags-display" class="flex flex-wrap mt-2"></div>
-                                </div>
+
 
                                 <!-- Tags -->
                                 <div class="space-y-2">
@@ -948,13 +1089,39 @@ export default class SnippetEditor {
         }
     }
 
-
-
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    updateTheme(theme) {
+        if (this.editor) {
+            this.editor.setTheme(theme);
+        }
+        localStorage.setItem('editor_theme', theme);
+    }
+
+    updateFontSize(size) {
+        const editorElement = document.getElementById('code-editor');
+        if (editorElement) {
+            editorElement.style.fontSize = size;
+            if (this.editor) this.editor.refresh();
+        }
+        localStorage.setItem('editor_font_size', size);
+    }
+
+    toggleFocusMode() {
+        if (this.editor) {
+            this.editor.toggleFocusMode();
+        }
+    }
+
+    toggleMarkdownPreview() {
+        if (this.editor) {
+            this.editor.toggleMarkdownPreview();
+        }
     }
 
     destroy() {
