@@ -101,7 +101,6 @@ class GamificationService
                 'points' => 150,
                 'trigger' => 'snippet.star',
                 'condition' => function($userId, $data) {
-                    // Check total stars across all user's snippets
                     $userSnippets = $this->userRepository->findSnippetsByUser($userId);
                     $totalStars = array_sum(array_column($userSnippets, 'star_count'));
                     return $totalStars >= 100;
@@ -117,6 +116,41 @@ class GamificationService
                     $userSnippets = $this->userRepository->findSnippetsByUser($userId);
                     $languages = array_unique(array_column($userSnippets, 'language'));
                     return count($languages) >= 10;
+                }
+            ],
+            'getting_noticed' => [
+                'name' => 'Getting Noticed',
+                'description' => 'Reached 1,000 total views on your snippets',
+                'icon' => '👀',
+                'points' => 50,
+                'trigger' => 'snippet.view',
+                'condition' => function($userId, $data) {
+                    $userSnippets = $this->userRepository->findSnippetsByUser($userId);
+                    $totalViews = array_sum(array_column($userSnippets, 'view_count'));
+                    return $totalViews >= 1000;
+                }
+            ],
+            'viral_sensation' => [
+                 'name' => 'Viral Sensation',
+                 'description' => 'Reached 10,000 total views on your snippets',
+                 'icon' => '🚀',
+                 'points' => 300,
+                 'trigger' => 'snippet.view',
+                 'condition' => function($userId, $data) {
+                     $userSnippets = $this->userRepository->findSnippetsByUser($userId);
+                     $totalViews = array_sum(array_column($userSnippets, 'view_count'));
+                     return $totalViews >= 10000;
+                 }
+            ],
+            'collaborator' => [
+                'name' => 'Team Player',
+                'description' => 'Joined your first collaboration session',
+                'icon' => '🤝',
+                'points' => 30,
+                'trigger' => 'collaboration.session_join',
+                'condition' => function($userId, $data) {
+                    // Simple check: trigger happened
+                    return true;
                 }
             ]
         ];
@@ -208,77 +242,11 @@ class GamificationService
         }
     }
 
-    private function awardAchievement(int $userId, string $key, array $achievement)
-    {
-        $this->achievementRepository->award($userId, [
-            'achievement_key' => $key,
-            'name' => $achievement['name'],
-            'description' => $achievement['description'],
-            'icon' => $achievement['icon'],
-            'points_awarded' => $achievement['points']
-        ]);
 
-        $this->awardPointsForAchievement($userId, $achievement['points']);
-        $this->notificationService->notifyAchievementUnlocked($userId, $achievement);
-    }
 
-    private function awardPointsForAchievement($userId, $points) {
-         $user = $this->userRepository->findById($userId);
-         if ($user) {
-             $this->userRepository->update($userId, ['achievement_points' => $user->getAchievementPoints() + $points]);
-         }
-    }
 
-    private function calculatePoints(string $action, array $context): int
-    {
-        switch ($action) {
-            case 'snippet.create': return $this->config['points_per_snippet'];
-            case 'snippet.fork': return $this->config['points_per_fork'];
-            case 'snippet.star': return $this->config['points_per_star'];
-            // ...
-            default: return 0;
-        }
-    }        $this->userRepository->update($userId, ['achievement_points' => $newPoints]);
 
-        $this->auditRepository->log(
-            $userId,
-            'gamification.points_awarded',
-            'user',
-            $userId,
-            ['achievement_points' => $user->getAchievementPoints()],
-            ['achievement_points' => $newPoints]
-        );
-
-        $this->checkAchievements($userId, $action, $context);
-
-        return $points;
-    }
-
-    public function checkAchievements(int $userId, string $action, array $context = []): array
-    {
-        $newAchievements = [];
-
-        foreach ($this->achievementTypes as $type => $achievement) {
-            if ($achievement['trigger'] !== $action) {
-                continue;
-            }
-
-            // Check if user already has this achievement
-            if ($this->achievementRepository->userHasAchievement($userId, $type)) {
-                continue;
-            }
-
-            // Check if conditions are met
-            if ($achievement['condition']($userId, $context)) {
-                $this->awardAchievement($userId, $type, $achievement);
-                $newAchievements[] = $achievement;
-            }
-        }
-
-        return $newAchievements;
-    }
-
-    public function awardAchievement(int $userId, string $type, array $achievementData = null): array
+    public function awardAchievement(int $userId, string $type, ?array $achievementData = null): array
     {
         if ($achievementData && !isset($this->achievementTypes[$type])) {
             $this->achievementTypes[$type] = $achievementData;
@@ -290,7 +258,7 @@ class GamificationService
         }
 
         // Check if user already has this achievement
-        if ($this->achievementRepository->userHasAchievement($userId, $type)) {
+        if ($this->achievementRepository->hasEarned($userId, $type)) {
             throw new ValidationException('User already has this achievement');
         }
 
@@ -324,6 +292,8 @@ class GamificationService
                 'points_awarded' => $achievement['points']
             ]
         );
+
+        $this->notificationService->notifyAchievementUnlocked($userId, $achievement);
 
         return $newAchievement;
     }

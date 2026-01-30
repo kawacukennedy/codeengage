@@ -83,7 +83,7 @@ class AchievementRepository
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function userHasAchievement(int $userId, string $badgeType): bool
+    public function hasEarned(int $userId, string $badgeType): bool
     {
         $sql = "
             SELECT 1 FROM achievements 
