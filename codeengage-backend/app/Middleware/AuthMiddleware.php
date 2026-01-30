@@ -36,11 +36,21 @@ class AuthMiddleware
 
     private function authenticate(): ?\App\Models\User
     {
-        // Check session first
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        // 1. Check API Key (Header: X-API-KEY)
+        $headers = getallheaders();
+        $apiKey = $headers['X-API-KEY'] ?? $headers['x-api-key'] ?? ''; // Case insensitive check
+        
+        if ($apiKey) {
+            $apiKeyRepo = new \App\Repositories\ApiKeyRepository($this->db);
+            $key = $apiKeyRepo->findByKey($apiKey);
+            
+            if ($key) {
+                $apiKeyRepo->updateLastUsed($key->getId());
+                return $this->userRepository->findById($key->getUserId());
+            }
         }
 
+        // 2. Check Session (started by index.php)
         if (!empty($_SESSION['user_id'])) {
             $user = $this->userRepository->findById($_SESSION['user_id']);
             if ($user) {
@@ -50,75 +60,38 @@ class AuthMiddleware
             }
         }
 
-        // Check JWT token
-        $headers = getallheaders();
+        // 3. Check JWT Token (Bearer)
         $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
         
         if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            try {
-                $payload = $this->validateJwtToken($matches[1]);
-                if ($payload && isset($payload['user_id'])) {
-                    $user = $this->userRepository->findById($payload['user_id']);
-                    if ($user) {
-                        return $user;
-                    }
+            $token = $matches[1];
+            $config = require __DIR__ . '/../../config/auth.php';
+            $secret = $config['jwt']['secret'] ?? 'default_secret'; // Fallback
+            
+            $payload = \App\Helpers\SecurityHelper::validateJwtToken($token, $secret);
+            
+            if ($payload && isset($payload['user_id'])) {
+                $user = $this->userRepository->findById($payload['user_id']);
+                if ($user) {
+                    return $user;
                 }
-            } catch (\Exception $e) {
-                // Token is invalid
             }
         }
 
         return null;
     }
 
-    private function validateJwtToken(string $token): ?array
-    {
-        $config = require __DIR__ . '/../../config/auth.php';
-        $secret = $config['jwt']['secret'];
-
-        $parts = explode('.', $token);
-        if (count($parts) !== 3) {
-            return null;
-        }
-
-        [$headerEncoded, $payloadEncoded, $signatureEncoded] = $parts;
-
-        // Verify signature
-        $signature = base64_decode(strtr($signatureEncoded, '-_', '+/'));
-        $expectedSignature = hash_hmac('sha256', $headerEncoded . '.' . $payloadEncoded, $secret, true);
-        
-        if (!hash_equals($signature, $expectedSignature)) {
-            return null;
-        }
-
-        // Check expiration
-        $payload = json_decode(base64_decode(strtr($payloadEncoded, '-_', '+/')), true);
-        if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
-            return null;
-        }
-
-        return $payload;
-    }
-
     public function requireRole(string $role): \App\Models\User
     {
         $user = $this->handle();
-
-        // Check if user has required role
-        // This would involve checking user_roles and role_permissions tables
-        // For now, we'll implement basic role checking
-        
+        // Role check logic...
         return $user;
     }
 
     public function requirePermission(string $permission): \App\Models\User
     {
         $user = $this->handle();
-
-        // Check if user has required permission
-        // This would involve checking the role_permissions table
-        // For now, we'll implement basic permission checking
-        
+        // Permission check logic...
         return $user;
     }
 }
