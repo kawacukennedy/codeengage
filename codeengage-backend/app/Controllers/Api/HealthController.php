@@ -403,4 +403,57 @@ class HealthController
                 return (int)$size;
         }
     }
+
+    public function docs(string $method, array $params): void
+    {
+        if ($method !== 'GET') {
+            ApiResponse::error('Method not allowed', 405);
+        }
+
+        $docs = [
+            'project' => 'CodeEngage 2.0 API',
+            'version' => '1.0.0',
+            'base_url' => '/api',
+            'endpoints' => [
+                'auth' => [
+                    'POST /auth/login' => 'Authenticate user and return JWT',
+                    'POST /auth/register' => 'Register a new user',
+                    'POST /auth/logout' => 'Invalidate current session (optional ?all=true)',
+                    'POST /auth/refresh' => 'Refresh access token using refresh token',
+                    'GET /auth/me' => 'Get current authenticated user'
+                ],
+                'snippets' => [
+                    'GET /snippets' => 'List all public snippets',
+                    'POST /snippets' => 'Create a new snippet',
+                    'GET /snippets/{id}' => 'Get snippet details',
+                    'PUT /snippets/{id}' => 'Update an existing snippet',
+                    'DELETE /snippets/{id}' => 'Soft-delete a snippet',
+                    'POST /snippets/{id}/star' => 'Toggle star status',
+                    'POST /snippets/{id}/fork' => 'Fork a snippet',
+                    'GET /snippets/{id}/versions' => 'Get snippet version history',
+                    'GET /snippets/{id}/analyses' => 'Get static analysis results'
+                ],
+                'collaboration' => [
+                    'POST /collaboration/sessions' => 'Create a new collaboration session',
+                    'GET /collaboration/sessions/{token}' => 'Join a session',
+                    'POST /collaboration/sessions/{token}/updates' => 'Push cursor/code updates',
+                    'GET /collaboration/sessions/{token}/updates' => 'Poll for updates',
+                    'POST /collaboration/invite' => 'Generate an invite link'
+                ],
+                'organizations' => [
+                    'GET /organizations' => 'List user organizations',
+                    'POST /organizations/create' => 'Create a new organization',
+                    'GET /organizations/{id}' => 'Get organization details',
+                    'POST /organizations/{id}/members' => 'Manage organization members'
+                ],
+                'health' => [
+                    'GET /health' => 'Complete system health check',
+                    'GET /health/docs' => 'API documentation (this page)'
+                ]
+            ],
+            'authentication' => 'Bearer JWT Token (X-XSRF-TOKEN required for state-changing requests)'
+        ];
+
+        ApiResponse::success($docs);
+    }
 }
