@@ -798,6 +798,31 @@ html.dark .dark\:text-gray-400 {
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* Skeleton Loading */
+.skeleton {
+  background: var(--color-bg-tertiary);
+  background: linear-gradient(90deg,
+      var(--color-bg-tertiary) 25%,
+      rgba(255, 255, 255, 0.05) 50%,
+      var(--color-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  min-height: 1em;
+  width: 100%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1796,10 +1821,11 @@ html.dark .dark\:text-gray-400 {
   background-color: rgba(147, 197, 253, 0.1);
 }
 
-display: block;
-margin-bottom: var(--spacing-2);
-color: var(--color-gray-300);
-font-size: 0.875rem;
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  color: var(--color-gray-300);
+  font-size: 0.875rem;
 }
 
 .checkbox-group label {
@@ -2096,4 +2122,20 @@ font-size: 0.875rem;
 
 .checkbox-group input[type="checkbox"] {
   width: auto;
+}
+
+/* Fullscreen Focus Mode */
+:fullscreen {
+  background-color: var(--color-gray-900);
+  padding: 20px;
+  overflow-y: auto;
+}
+
+::backdrop {
+  background-color: var(--color-gray-900);
+}
+
+/* Ensure editor takes full height in fullscreen */
+:fullscreen #code-editor {
+  height: calc(100vh - 80px) !important;
 }
