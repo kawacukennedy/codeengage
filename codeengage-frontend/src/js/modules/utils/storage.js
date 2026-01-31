@@ -7,6 +7,90 @@
 const PREFIX = 'codeengage_';
 
 /**
+ * Storage error tracking
+ */
+const STORAGE_ERRORS = [];
+
+/**
+ * Track storage errors for debugging
+ * @param {string} operation - Storage operation
+ * @param {string} key - Storage key
+ * @param {Error} error - Error object
+ */
+function trackStorageError(operation, key, error) {
+    const errorInfo = {
+        operation,
+        key,
+        error: {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+        },
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        storageAvailable: isStorageAvailable('localStorage'),
+        storageQuota: getStorageQuota()
+    };
+
+    STORAGE_ERRORS.push(errorInfo);
+    
+    // Keep only last 50 errors
+    if (STORAGE_ERRORS.length > 50) {
+        STORAGE_ERRORS.splice(0, STORAGE_ERRORS.length - 50);
+    }
+
+    // Log for debugging
+    console.error('Storage Error:', errorInfo);
+
+    // Report to global error handler if available
+    if (window.app && window.app.handleGlobalError) {
+        window.app.handleGlobalError(error, {
+            type: 'storage_error',
+            operation,
+            key
+        });
+    }
+}
+
+/**
+ * Check if storage is available
+ * @param {string} type - 'localStorage' or 'sessionStorage'
+ * @returns {boolean} Storage availability
+ */
+function isStorageAvailable(type) {
+    try {
+        const storage = window[type];
+        const testKey = '__storage_test__';
+        storage.setItem(testKey, 'test');
+        storage.removeItem(testKey);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Get storage quota information
+ * @returns {object} Storage quota details
+ */
+function getStorageQuota() {
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+            return {
+                available: true,
+                quota: null,
+                usage: null,
+                percentage: null
+            };
+        } catch (e) {
+            return { available: false };
+        }
+    }
+    
+    return { available: false };
+}
+
+/**
  * Get item from localStorage with JSON parsing
  * @param {string} key - Storage key
  * @param {*} defaultValue - Default value if not found
@@ -14,10 +98,15 @@ const PREFIX = 'codeengage_';
  */
 export function getLocal(key, defaultValue = null) {
     try {
+        if (!isStorageAvailable('localStorage')) {
+            trackStorageError('get', key, new Error('localStorage not available'));
+            return defaultValue;
+        }
+
         const item = localStorage.getItem(PREFIX + key);
         return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-        console.error('Error reading from localStorage:', error);
+        trackStorageError('get', key, error);
         return defaultValue;
     }
 }
