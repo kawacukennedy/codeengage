@@ -14,6 +14,7 @@ import { Profile } from './pages/profile.js';
 import { Settings } from './pages/settings.js';
 import { Admin } from './pages/admin.js';
 import { Organizations } from './pages/organizations.js';
+import { Leaderboard } from './pages/leaderboard.js';
 import { SnippetViewer } from './pages/snippet-viewer.js';
 import SnippetEditor from './pages/snippet-editor.js';
 import NotificationSystem from './modules/components/notification-system.js';
@@ -44,6 +45,9 @@ class App {
      */
     async init() {
         try {
+            // Setup global error handling FIRST
+            this.setupGlobalErrorHandling();
+
             // Register Service Worker for offline support
             this.registerServiceWorker();
 
@@ -67,6 +71,7 @@ class App {
             this.initTheme();
 
             await this.auth.init();
+            this.setupGlobalShortcuts();
             this.setupGlobalListeners();
             this.setupRoutes();
             this.router.handleRouteChange();
@@ -157,6 +162,11 @@ class App {
 
         this.router.add('/organizations/:id', async (params) => {
             this.currentPage = new Organizations(this, 'details', params);
+            await this.currentPage.init();
+        }, { protected: true });
+
+        this.router.add('/leaderboard', async () => {
+            this.currentPage = new Leaderboard(this);
             await this.currentPage.init();
         }, { protected: true });
 
@@ -617,6 +627,186 @@ class App {
 
     showInfo(message) {
         return this.notifications.info(message);
+    }
+
+    setupGlobalShortcuts() {
+        this.shortcutManager.add(['ctrl+k', 'cmd+k'], () => {
+            this.commandPalette.show();
+        }, { description: 'Open Command Palette' });
+
+        this.shortcutManager.add(['ctrl+/', 'cmd+/'], () => {
+            if (this.currentPage && this.currentPage.editor) {
+                this.currentPage.editor.toggleComment();
+            }
+        }, { description: 'Toggle Comment' });
+
+        this.shortcutManager.add(['ctrl+s', 'cmd+s'], () => {
+            if (this.currentPage && typeof this.currentPage.save === 'function') {
+                this.currentPage.save();
+            }
+        }, { description: 'Save Snippet' });
+    }
+
+    /**
+     * Setup global error handling
+     */
+    setupGlobalErrorHandling() {
+        // Handle uncaught JavaScript errors
+        window.addEventListener('error', (event) => {
+            this.handleGlobalError(event.error, {
+                type: 'javascript_error',
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                message: event.message
+            });
+            event.preventDefault();
+        });
+
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleGlobalError(event.reason, {
+                type: 'promise_rejection',
+                promise: event.promise
+            });
+            event.preventDefault();
+        });
+
+        // Handle resource loading errors
+        window.addEventListener('error', (event) => {
+            if (event.target !== window) {
+                this.handleGlobalError(new Error(`Resource failed to load: ${event.target.src || event.target.href}`), {
+                    type: 'resource_error',
+                    element: event.target.tagName,
+                    source: event.target.src || event.target.href
+                });
+                event.preventDefault();
+            }
+        }, true);
+    }
+
+    /**
+     * Handle global errors consistently
+     */
+    async handleGlobalError(error, context = {}) {
+        // Log to console for debugging
+        console.error('Global error caught:', error, context);
+
+        // Report error to backend
+        try {
+            await this.reportError(error, context);
+        } catch (reportError) {
+            console.error('Failed to report error:', reportError);
+        }
+
+        // Show user-friendly error message
+        const userMessage = this.getUserFriendlyErrorMessage(error, context);
+        this.showError(userMessage);
+
+        // For critical errors, consider recovery options
+        if (this.isCriticalError(error, context)) {
+            this.handleCriticalError(error, context);
+        }
+    }
+
+    /**
+     * Report error to backend for tracking
+     */
+    async reportError(error, context = {}) {
+        const errorData = {
+            message: error.message || 'Unknown error',
+            stack: error.stack,
+            context: {
+                ...context,
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                userId: this.auth.user?.id,
+                sessionId: this.getSessionId()
+            }
+        };
+
+        try {
+            await fetch('/api/errors', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(errorData)
+            });
+        } catch (networkError) {
+            // Silently fail if network is down
+            console.warn('Could not report error to backend:', networkError.message);
+        }
+    }
+
+    /**
+     * Get user-friendly error message
+     */
+    getUserFriendlyErrorMessage(error, context) {
+        // Network errors
+        if (error.name === 'NetworkError' || error.message.includes('fetch')) {
+            return 'Network connection issue. Please check your internet connection.';
+        }
+
+        // Permission errors
+        if (error.name === 'NotAllowedError') {
+            return 'Permission denied. Please check your browser permissions.';
+        }
+
+        // JavaScript errors
+        if (context.type === 'javascript_error') {
+            return 'An unexpected error occurred. The page may not work correctly.';
+        }
+
+        // Promise rejections
+        if (context.type === 'promise_rejection') {
+            return 'An operation failed to complete. Please try again.';
+        }
+
+        // Resource loading errors
+        if (context.type === 'resource_error') {
+            return 'Some resources failed to load. Please refresh the page.';
+        }
+
+        // Default
+        return 'Something went wrong. Please try refreshing the page.';
+    }
+
+    /**
+     * Check if error is critical and needs special handling
+     */
+    isCriticalError(error, context) {
+        // Consider errors that prevent app functionality as critical
+        return error.name === 'ChunkLoadError' || 
+               error.message.includes('Loading chunk') ||
+               context.type === 'javascript_error' && context.lineno === 1;
+    }
+
+    /**
+     * Handle critical errors with recovery options
+     */
+    handleCriticalError(error, context) {
+        if (error.name === 'ChunkLoadError' || error.message.includes('Loading chunk')) {
+            // Show option to reload page for chunk loading errors
+            setTimeout(() => {
+                if (confirm('The application has been updated. Would you like to reload the page?')) {
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+    }
+
+    /**
+     * Get or create session ID for error tracking
+     */
+    getSessionId() {
+        let sessionId = sessionStorage.getItem('sessionId');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('sessionId', sessionId);
+        }
+        return sessionId;
     }
 
     /**
