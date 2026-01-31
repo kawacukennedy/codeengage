@@ -9,12 +9,103 @@ use PDO;
 class SnippetController
 {
     private $snippetService;
+    private $searchService;
+    private $gamificationService;
     private $pdo;
 
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
         $this->snippetService = new SnippetService($pdo);
+        
+        // Manual DI for SearchService
+        $snippetRepo = new \App\Repositories\SnippetRepository($pdo);
+        $tagRepo = new \App\Repositories\TagRepository($pdo);
+        $userRepo = new \App\Repositories\UserRepository($pdo);
+        $this->searchService = new \App\Services\SearchService($snippetRepo, $tagRepo, $userRepo);
+
+        // Manual DI for GamificationService
+        $achievementRepo = new \App\Repositories\AchievementRepository($pdo);
+        $auditRepo = new \App\Repositories\AuditRepository($pdo);
+        $notificationRepo = new \App\Repositories\NotificationRepository($pdo);
+        $emailService = new \App\Services\EmailService();
+        $notificationService = new \App\Services\NotificationService($notificationRepo, $userRepo, $emailService);
+        
+        $this->gamificationService = new \App\Services\GamificationService(
+            $userRepo,
+            $achievementRepo,
+            $auditRepo,
+            new \App\Helpers\SecurityHelper(),
+            $notificationService
+        );
+    }
+    
+    // ... index method ... 
+
+    public function analyze($method, $params)
+    {
+        if ($method !== 'POST') {
+            ApiResponse::error('Method not allowed', 405);
+        }
+
+        $id = $params[0] ?? null;
+        if (!$id) {
+             ApiResponse::error('Snippet ID required', 400);
+        }
+
+        // Visibility/Auth check
+        $snippet = $this->snippetService->getById($id);
+        if ($snippet['visibility'] !== 'public') {
+             $this->ensureAuth();
+             if ($snippet['author_id'] !== $_SESSION['user_id']) {
+                 ApiResponse::error('Unauthorized', 403);
+             }
+        }
+        
+        $result = $this->snippetService->analyzeSaved($id);
+        
+        // Trigger gamification
+        if (isset($_SESSION['user_id'])) {
+             $this->triggerGamification($_SESSION['user_id'], 'snippet.analyze');
+        }
+
+        ApiResponse::success($result);
+    }
+
+    // ... other methods ...
+
+    private function incrementViewCountDebounced($id)
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        
+        $viewedSnippets = $_SESSION['viewed_snippets'] ?? [];
+        $lastViewed = $viewedSnippets[$id] ?? 0;
+        
+        // 1 hour debounce
+        if (time() - $lastViewed > 3600) {
+            $this->snippetService->incrementViewCount($id);
+            $viewedSnippets[$id] = time();
+            $_SESSION['viewed_snippets'] = $viewedSnippets;
+            
+            // Trigger View Gamification (actions are usually attributed to the AUTHOR of the snippet, not the viewer)
+            // But wait, 'getting_noticed' achievement is for the AUTHOR.
+            // So we need to find the author of this snippet and award them points!
+            $snippet = $this->snippetService->getById($id);
+            if ($snippet) {
+                // Award points/check achievements for the AUTHOR
+                $this->triggerGamification($snippet['author_id'], 'snippet.view');
+            }
+        }
+    }
+
+    private function triggerGamification($userId, $action, $context = [])
+    {
+        try {
+            $this->gamificationService->awardPoints($userId, $action, $context);
+        } catch (\Exception $e) {
+            // Log error but don't fail properly
+            error_log("Gamification error: " . $e->getMessage());
+        }
     }
 
     public function index($method, $params)
@@ -25,17 +116,46 @@ class SnippetController
                 'visibility' => $_GET['visibility'] ?? 'public',
                 'search' => $_GET['search'] ?? null,
                 'author_id' => $_GET['author_id'] ?? null,
-                'organization_id' => $_GET['organization_id'] ?? null
+                'organization_id' => $_GET['organization_id'] ?? null,
+                'tags' => isset($_GET['tags']) ? explode(',', $_GET['tags']) : null,
+                'order_by' => $_GET['sort'] ?? 'created_at', // snippets.js sends 'sort' param mapping to order_by
+                'order' => $_GET['order'] ?? 'DESC'
             ];
             
-            // Generate cache key based on filters
-            $cacheKey = 'snippets_list_' . md5(json_encode($filters));
+            // Clean filters
+            $filters = array_filter($filters, function($v) { return !is_null($v) && $v !== ''; });
+
+            // If searching, use SearchService
+            if (!empty($filters['search'])) {
+                 $page = (int)($_GET['page'] ?? 1);
+                 $limit = (int)($_GET['per_page'] ?? $_GET['limit'] ?? 20);
+                 
+                 $searchParams = [
+                     'q' => $filters['search'],
+                     'page' => $page,
+                     'limit' => $limit,
+                     'filters' => $filters,
+                     'sort' => $_GET['sort'] ?? 'relevance'
+                 ];
+                 
+                 $results = $this->searchService->search($searchParams);
+                 ApiResponse::success($results);
+                 return;
+            }
+            
+            // Normal browsing (Listing)
+            $page = (int)($_GET['page'] ?? 1);
+            $limit = (int)($_GET['per_page'] ?? $_GET['limit'] ?? 20);
+            $offset = ($page - 1) * $limit;
+
+            // Generate cache key based on filters and pagination
+            $cacheKey = 'snippets_list_' . md5(json_encode($filters) . "_p{$page}_l{$limit}");
             
             // Try to get from cache
             $snippets = \App\Helpers\CacheHelper::get($cacheKey);
             
             if ($snippets === null) {
-                $snippets = $this->snippetService->list($filters);
+                $snippets = $this->snippetService->list($filters, $limit, $offset);
                 // Cache for 1 minute (short TTL for lists)
                 \App\Helpers\CacheHelper::set($cacheKey, $snippets, 60);
             }
@@ -271,6 +391,36 @@ class SnippetController
         ApiResponse::success($result);
     }
 
+    public function analyses($method, $params)
+    {
+        if ($method !== 'GET') {
+            ApiResponse::error('Method not allowed', 405);
+        }
+
+        $id = $params[0] ?? null;
+        if (!$id) ApiResponse::error('Snippet ID required', 400);
+
+        // Check auth/visibility? 
+        // Logic inside SnippetService::getAnalyses checks for existence, 
+        // but Controller should check visibility if not public.
+        // Assuming public snippets have public analysis.
+        
+         // Basic visibility check
+        $snippet = $this->snippetService->getById($id); // Will 404 if not found
+        // if private and not owner -> 403
+        if ($snippet['visibility'] !== 'public') {
+             $this->ensureAuth();
+             if ($snippet['author_id'] !== $_SESSION['user_id']) {
+                 ApiResponse::error('Unauthorized', 403);
+             }
+        }
+
+        $result = $this->snippetService->getAnalyses($id);
+        ApiResponse::success($result);
+    }
+
+
+    
     private function ensureAuth()
     {
         if (session_status() === PHP_SESSION_NONE) session_start();
@@ -279,52 +429,9 @@ class SnippetController
         }
     }
 
-    private function awardPoints($action)
-    {
-        try {
-            // Manual Dependency Injection
-            $userRepo = new \App\Repositories\UserRepository($this->pdo);
-            $achievementRepo = new \App\Repositories\AchievementRepository($this->pdo);
-            $auditRepo = new \App\Repositories\AuditRepository($this->pdo);
-            $notificationRepo = new \App\Repositories\NotificationRepository($this->pdo);
-            
-            $emailService = new \App\Services\EmailService(); // Config defaults
-            
-            $notificationService = new \App\Services\NotificationService(
-                $notificationRepo,
-                $userRepo,
-                $emailService
-            );
 
-            $gamification = new \App\Services\GamificationService(
-                $userRepo,
-                $achievementRepo,
-                $auditRepo,
-                new \App\Helpers\SecurityHelper(),
-                $notificationService
-            );
-            
-            $gamification->awardPoints($_SESSION['user_id'], $action);
-        } catch (\Exception $e) {
-            // Log error but don't fail the request
-            error_log("Failed to award points/notify: " . $e->getMessage());
-        }
-    }
 
-    private function incrementViewCountDebounced($id)
-    {
-        if (session_status() === PHP_SESSION_NONE) session_start();
-        
-        $viewedSnippets = $_SESSION['viewed_snippets'] ?? [];
-        $lastViewed = $viewedSnippets[$id] ?? 0;
-        
-        // 1 hour debounce
-        if (time() - $lastViewed > 3600) {
-            $this->snippetService->incrementViewCount($id);
-            $viewedSnippets[$id] = time();
-            $_SESSION['viewed_snippets'] = $viewedSnippets;
-        }
-    }
+
 
     public function __call($name, $arguments)
     {
@@ -346,29 +453,5 @@ class SnippetController
         
         ApiResponse::error('Action not found: ' . $name, 404);
     }
-    private function triggerGamification($userId, $action, $context = [])
-    {
-        // Manual DI for now as quick fix, ideally injected in constructor
-        try {
-            $userRepo = new \App\Repositories\UserRepository($this->pdo);
-            $achievementRepo = new \App\Repositories\AchievementRepository($this->pdo);
-            $auditRepo = new \App\Repositories\AuditRepository($this->pdo);
-            $notificationRepo = new \App\Repositories\NotificationRepository($this->pdo);
-            
-            $emailService = new \App\Services\EmailService();
-            $notificationService = new \App\Services\NotificationService($notificationRepo, $userRepo, $emailService);
-            
-            $gamification = new \App\Services\GamificationService(
-                $userRepo,
-                $achievementRepo,
-                $auditRepo,
-                new \App\Helpers\SecurityHelper(),
-                $notificationService
-            );
-            
-            $gamification->awardPoints($userId, $action, $context);
-        } catch (\Exception $e) {
-            // Log but don't fail request
-        }
-    }
+
 }

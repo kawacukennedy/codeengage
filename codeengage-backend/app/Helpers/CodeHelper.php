@@ -31,6 +31,11 @@ class CodeHelper
             preg_match_all($pattern, $code, $matches);
             $complexity += count($matches[0]) * $weight;
         }
+
+        // Penalty for deep nesting
+        if (preg_match_all('/\{[^{}]*\{[^{}]*\{/s', $code, $matches)) {
+            $complexity += count($matches[0]) * 2;
+        }
         
         return round($complexity, 2);
     }
@@ -56,17 +61,32 @@ class CodeHelper
              'Weak Cryptography' => [
                 '/md5\s*\(.*\)/i' => 'MD5 is considered weak for hashing passwords.',
                 '/sha1\s*\(.*\)/i' => 'SHA1 is considered weak.',
+            ],
+            'Hardcoded Secrets' => [
+                '/(api_key|secret|password|passwd|aws_key|access_token)\s*[:=]\s*["\'][a-zA-Z0-9_\-\.\/]{20,}["\']/i' => 'Potential hardcoded secret or API key detected.',
+                '/AIza[0-9A-Za-z-_]{35}/' => 'Potential Google API Key detected.',
+            ],
+            'Path Traversal' => [
+                '/(include|require|file_get_contents|fopen)\s*\(.*(\$_GET|\$_POST|\$_REQUEST).*\)/i' => 'Unvalidated file path from user input may lead to Path Traversal.',
+                '/\.\.\/\.\.\//' => 'Potential directory traversal sequence found in code.',
             ]
         ];
 
         foreach ($commonPatterns as $type => $rules) {
              foreach ($rules as $pattern => $message) {
-                 if (preg_match($pattern, $code)) {
-                     $issues[] = [
-                         'type' => $type,
-                         'severity' => 'high',
-                         'description' => $message
-                     ];
+                 if (preg_match_all($pattern, $code, $matches, PREG_OFFSET_CAPTURE)) {
+                     foreach ($matches[0] as $match) {
+                         $offset = $match[1];
+                         $line = substr_count(substr($code, 0, $offset), "\n") + 1;
+                         
+                         $issues[] = [
+                             'type' => $type,
+                             'severity' => 'high',
+                             'message' => $message, // Frontend expects 'message'
+                             'description' => $message,
+                             'line' => $line
+                         ];
+                     }
                  }
              }
         }
@@ -78,18 +98,34 @@ class CodeHelper
     {
         $issues = [];
         
-        if (preg_match_all('/\bfor\b/i', $code) > 3) {
-             if (preg_match('/for\s*\(.*for\s*\(/s', $code)) {
-                 $issues[] = 'Nested loops detected, which may cause O(n^2) or worse performance.';
-             }
+        // Nested loops (naive check)
+        if (preg_match_all('/for\s*\([^)]*\)\s*\{[^}]*for\s*\(/is', $code, $matches, PREG_OFFSET_CAPTURE)) {
+            foreach ($matches[0] as $match) {
+                 $offset = $match[1];
+                 $line = substr_count(substr($code, 0, $offset), "\n") + 1;
+                 $issues[] = [
+                    'message' => 'Nested loops detected, which may cause O(n^2) or worse performance.',
+                    'line' => $line
+                 ];
+            }
         }
         
         if (substr_count($code, "\n") > 500) {
-            $issues[] = 'File length exceeds 500 lines. Consider refactoring into smaller modules.';
+            $issues[] = [
+                'message' => 'File length exceeds 500 lines. Consider refactoring into smaller modules.',
+                'line' => 1
+            ];
         }
         
-        if (preg_match('/SELECT\s+\*\s+FROM/i', $code)) {
-            $issues[] = 'Avoid "SELECT *" in SQL queries to reduce data load.';
+        if (preg_match_all('/SELECT\s+\*\s+FROM/i', $code, $matches, PREG_OFFSET_CAPTURE)) {
+            foreach ($matches[0] as $match) {
+                 $offset = $match[1];
+                 $line = substr_count(substr($code, 0, $offset), "\n") + 1;
+                 $issues[] = [
+                    'message' => 'Avoid "SELECT *" in SQL queries to reduce data load.',
+                    'line' => $line
+                 ];
+            }
         }
         
         return $issues;

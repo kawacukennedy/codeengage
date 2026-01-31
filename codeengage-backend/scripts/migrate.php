@@ -15,6 +15,20 @@ if (file_exists($envFile)) {
     }
 }
 
+// Autoloader
+spl_autoload_register(function ($className) {
+    $ds = DIRECTORY_SEPARATOR;
+    $className = str_replace('App\\', '', $className);
+    $className = str_replace('\\', $ds, $className);
+    $className = trim($className, $ds);
+    $path = __DIR__ . '/../app/' . $className . '.php';
+    if (is_readable($path)) {
+        require $path;
+        return true;
+    }
+    return false;
+});
+
 echo "Starting migrations...\n";
 
 // Get DB connection
@@ -46,6 +60,9 @@ try {
     
     // Get migration files
     $files = glob(__DIR__ . '/../migrations/*.php');
+    $files = array_filter($files, function($f) {
+        return preg_match('/^\d+/', basename($f));
+    });
     sort($files);
     
     foreach ($files as $file) {
@@ -57,22 +74,39 @@ try {
         }
         
         echo "Migrating $name... ";
+        $beforeClasses = get_declared_classes();
         $migration = require $file;
+        $afterClasses = get_declared_classes();
+        $newClasses = array_diff($afterClasses, $beforeClasses);
         
         if (is_callable($migration)) {
             $migration($pdo);
-            
             $stmt = $pdo->prepare("INSERT INTO migrations (migration) VALUES (?)");
             $stmt->execute([$name]);
             echo "DONE\n";
+        } elseif (is_object($migration) && method_exists($migration, 'up')) {
+            $migration->up($pdo);
+            $stmt = $pdo->prepare("INSERT INTO migrations (migration) VALUES (?)");
+            $stmt->execute([$name]);
+            echo "DONE (Object)\n";
         } elseif (is_array($migration) && isset($migration['up']) && is_callable($migration['up'])) {
             $migration['up']($pdo);
-            
             $stmt = $pdo->prepare("INSERT INTO migrations (migration) VALUES (?)");
             $stmt->execute([$name]);
             echo "DONE\n";
+        } elseif (!empty($newClasses)) {
+            $className = reset($newClasses);
+            $instance = new $className($pdo);
+            if (method_exists($instance, 'up')) {
+                $instance->up($pdo);
+                $stmt = $pdo->prepare("INSERT INTO migrations (migration) VALUES (?)");
+                $stmt->execute([$name]);
+                echo "DONE ($className)\n";
+            } else {
+                echo "FAILED (No up method in $className)\n";
+            }
         } else {
-            echo "FAILED (Not callable or valid array)\n";
+            echo "FAILED (Not callable or valid array/class/object)\n";
         }
     }
     

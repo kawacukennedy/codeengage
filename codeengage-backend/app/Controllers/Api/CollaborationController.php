@@ -9,9 +9,11 @@ use PDO;
 class CollaborationController
 {
     private $service;
+    private $pdo;
 
     public function __construct(PDO $pdo)
     {
+        $this->pdo = $pdo;
         $this->service = new CollaborationService($pdo);
     }
 
@@ -75,6 +77,11 @@ class CollaborationController
         $inviteToken = $input['token'] ?? '';
         
         $result = $this->service->joinWithInvite($inviteToken, $userId);
+        
+        if ($userId) {
+            $this->triggerGamification($userId, 'collaboration.session_join');
+        }
+        
         ApiResponse::success($result);
     }
 
@@ -91,7 +98,38 @@ class CollaborationController
     {
         $userId = $_SESSION['user_id'] ?? 0;
         $result = $this->service->joinSession($token, $userId);
+        
+        // Trigger gamification
+        if ($userId) {
+            $this->triggerGamification($userId, 'collaboration.session_join');
+        }
+        
         ApiResponse::success($result);
+    }
+    
+    private function triggerGamification($userId, $action, $context = [])
+    {
+        try {
+            $userRepo = new \App\Repositories\UserRepository($this->pdo);
+            $achievementRepo = new \App\Repositories\AchievementRepository($this->pdo);
+            $auditRepo = new \App\Repositories\AuditRepository($this->pdo);
+            $notificationRepo = new \App\Repositories\NotificationRepository($this->pdo);
+            
+            $emailService = new \App\Services\EmailService();
+            $notificationService = new \App\Services\NotificationService($notificationRepo, $userRepo, $emailService);
+            
+            $gamification = new \App\Services\GamificationService(
+                $userRepo,
+                $achievementRepo,
+                $auditRepo,
+                new \App\Helpers\SecurityHelper(),
+                $notificationService
+            );
+            
+            $gamification->awardPoints($userId, $action, $context);
+        } catch (\Exception $e) {
+            // Log but don't fail request
+        }
     }
 
     private function push($token)
@@ -104,11 +142,14 @@ class CollaborationController
 
     private function poll($token)
     {
-        $lastTs = $_GET['since'] ?? time();
+        $lastVersion = (int)($_GET['v'] ?? 0);
+        $userId = $_SESSION['user_id'] ?? 0;
+        
+        // Prevent session locking during long poll
         session_write_close();
         
-        $result = $this->service->pollUpdates($token, $lastTs);
-        ApiResponse::success($result ?? ['changed' => false]);
+        $result = $this->service->pollUpdates($token, $lastVersion, $userId);
+        ApiResponse::success($result ?? ['version' => $lastVersion, 'status' => 'timeout']);
     }
 
     private function sendMessage($token)

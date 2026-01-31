@@ -4,11 +4,12 @@ namespace App\Services;
 
 class AnalysisService
 {
-    private $pdo;
+    private $analysisRepository;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+        $this->analysisRepository = new \App\Repositories\AnalysisRepository($pdo);
     }
 
     public function analyze($code, $language)
@@ -31,5 +32,27 @@ class AnalysisService
             'code_smells' => $codeSmells,
             'analyzed_at' => date('Y-m-d H:i:s')
         ];
+    }
+
+    public function storeAnalysis(int $versionId, array $analysisData, string $type = 'comprehensive')
+    {
+        return $this->analysisRepository->create([
+            'snippet_version_id' => $versionId,
+            'analysis_type' => $type,
+            'complexity_score' => $analysisData['complexity'] ?? 0,
+            'security_issues' => $analysisData['security_issues'] ?? [],
+            'performance_suggestions' => $analysisData['performance_suggestions'] ?? [],
+            'code_smells' => $analysisData['code_smells'] ?? []
+        ]);
+    }
+
+    public function getHistory(int $snippetId)
+    {
+        return $this->analysisRepository->findBySnippet($snippetId);
+    }
+
+    public function getByVersion(int $versionId)
+    {
+        return $this->analysisRepository->findByVersion($versionId);
     }
 }

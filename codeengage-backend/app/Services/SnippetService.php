@@ -9,9 +9,11 @@ class SnippetService
 {
     private $snippetRepository;
     private $malwareScanner;
+    private $pdo;
 
     public function __construct($pdo)
     {
+        $this->pdo = $pdo;
         $this->snippetRepository = new SnippetRepository($pdo);
         $this->malwareScanner = new MalwareScannerService();
     }
@@ -42,12 +44,26 @@ class SnippetService
         }
     }
 
-    public function list($filters)
+    public function list($filters, $limit = 20, $offset = 0)
     {
-        $snippets = $this->snippetRepository->findMany($filters);
-        return array_map(function($snippet) {
+        $snippets = $this->snippetRepository->findMany($filters, $limit, $offset);
+        $total = $this->snippetRepository->count($filters);
+        
+        $data = array_map(function($snippet) {
             return $snippet->toArray();
         }, $snippets);
+        
+        return [
+            'snippets' => $data,
+            'total' => $total,
+            'pagination' => [
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset,
+                'page' => floor($offset / $limit) + 1,
+                'pages' => ceil($total / $limit)
+            ]
+        ];
     }
 
     public function get($id)
@@ -139,6 +155,17 @@ class SnippetService
             return $version->toArray();
         }, $versions);
     }
+
+    public function getAnalyses($id)
+    {
+        $snippet = $this->snippetRepository->findById($id);
+        if (!$snippet) {
+            ApiResponse::error('Snippet not found', 404);
+        }
+        
+        $analysisService = new AnalysisService($this->pdo);
+        return $analysisService->getHistory($id);
+    }
     
     private function formatSnippet($snippet) {
         $data = $snippet->toArray();
@@ -148,25 +175,117 @@ class SnippetService
         return $data;
     }
 
+    public function analyzeSaved($id)
+    {
+        $snippet = $this->snippetRepository->findById($id);
+        if (!$snippet) {
+            ApiResponse::error('Snippet not found', 404);
+        }
+
+        $latestVersion = $this->snippetRepository->getLatestVersion($id);
+        if (!$latestVersion) {
+             ApiResponse::error('No code to analyze', 400);
+        }
+
+        // Check if analysis already exists
+        $analysisService = new AnalysisService($this->pdo);
+        $existing = $analysisService->getByVersion($latestVersion->getId());
+        
+        if ($existing) {
+            // Transform to format expected by frontend
+            $issues = [];
+            if ($existing->getSecurityIssues()) $issues = array_merge($issues, $existing->getSecurityIssues());
+            if ($existing->getPerformanceSuggestions()) $issues = array_merge($issues, $existing->getPerformanceSuggestions());
+            
+            // Map to unified "issues" format if needed or return raw
+            // Frontend expects: complexity_score, security_issues, performance_suggestions
+            // and maybe flattened "issues" for annotations.
+            
+            return [
+                'complexity_score' => $existing->getComplexityScore(),
+                'security_issues' => $existing->getSecurityIssues(),
+                'performance_suggestions' => $existing->getPerformanceSuggestions(),
+                'code_smells' => $existing->getCodeSmells(),
+                'issues' => $this->flattenIssues($existing) // Helper to flatten for editor annotations
+            ];
+        }
+
+        // If not, run analysis (and save it)
+        $language = $snippet->getLanguage();
+        $code = $latestVersion->getCode();
+        
+        $results = $analysisService->analyze($code, $language);
+        $analysisService->storeAnalysis($latestVersion->getId(), $results);
+        
+        // Return format
+        $results['complexity_score'] = $results['complexity'];
+        // Fix keys
+        return $results + ['issues' => $this->flattenIssuesFromRaw($results)];
+    }
+
+    private function flattenIssues($analysis) {
+        $issues = [];
+        
+        $security = $analysis->getSecurityIssues() ?: [];
+        foreach ($security as $issue) {
+            $issues[] = [
+                'from' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 0],
+                'to' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 100], // Rough estimate
+                'message' => $issue['message'] ?? $issue['description'] ?? 'Security Issue',
+                'severity' => 'error'
+            ];
+        }
+
+        $performance = $analysis->getPerformanceSuggestions() ?: [];
+        foreach ($performance as $issue) {
+             $issues[] = [
+                'from' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 0],
+                'to' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 100],
+                'message' => $issue['message'] ?? 'Performance Suggestion',
+                'severity' => 'warning'
+            ];
+        }
+
+        return $issues;
+    }
+
+    private function flattenIssuesFromRaw($results) {
+         $issues = [];
+         
+         $security = $results['security_issues'] ?? [];
+         foreach ($security as $issue) {
+             $issues[] = [
+                'from' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 0],
+                'to' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 100],
+                'message' => $issue['message'] ?? $issue['description'] ?? 'Security Issue',
+                'severity' => 'error'
+             ];
+         }
+         
+         $performance = $results['performance_suggestions'] ?? [];
+         foreach ($performance as $issue) {
+             $issues[] = [
+                'from' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 0],
+                'to' => ['line' => ($issue['line'] ?? 1) - 1, 'ch' => 100],
+                'message' => $issue['message'] ?? 'Performance Suggestion',
+                'severity' => 'warning'
+             ];
+         }
+
+         return $issues;
+    }
+    
     public function restore($id, $userId)
     {
-        // Need to find including deleted
-        // Repository currently filters 'deleted_at IS NULL' in findById...
-        // We need a way to find *any* snippet or explicitly findDeleted
-        // For now, let's assume we implement a `findByIdWithDeleted` or raw query in repo
-        // Or we just add a method `findAnyById`
+        $snippet = $this->snippetRepository->findWithTrashed($id);
         
-        // Actually Snippet model `findById` query includes `deleted_at IS NULL` check in Model/User.php? No, `Snippet.php`.
-        // Let's modify Repo to allow finding deleted for restore.
+        if (!$snippet) {
+            ApiResponse::error('Snippet not found', 404);
+        }
         
-        // Quick fix: Add `findTrashedById` to Repo or Service queries it directly.
-        // Let's assume we add it to Repo in next step or use raw query here if needed, 
-        // but Service shouldn't do raw queries.
-        
-        // Let's assume the user IS the owner.
-        // We can check ownership after finding.
-        
-        // To avoid editing Repo again immediately, let's just attempt restore if valid.
+        if ($snippet->getAuthorId() != $userId) {
+            ApiResponse::error('Unauthorized', 403);
+        }
         
         return $this->snippetRepository->restore($id);
     }

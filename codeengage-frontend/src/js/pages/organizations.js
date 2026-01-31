@@ -164,29 +164,50 @@ export class Organizations {
             cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
         }
 
+        // Method toggle
+        const methodRadios = document.querySelectorAll('input[name="add_method"]');
+        methodRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isEmail = e.target.value === 'email';
+                document.getElementById('id-input-container').classList.toggle('hidden', isEmail);
+                document.getElementById('email-input-container').classList.toggle('hidden', !isEmail);
+            });
+        });
+
         if (confirmBtn) {
             confirmBtn.addEventListener('click', async () => {
                 const form = document.getElementById('add-member-form');
-                const userId = form.querySelector('[name="user_id"]').value;
+                const method = form.querySelector('input[name="add_method"]:checked').value;
                 const role = form.querySelector('[name="role"]').value;
 
-                if (!userId) return;
-
                 try {
-                    const res = await this.app.apiClient.post(`/organizations/${this.params.id}/members`, {
-                        user_id: userId,
-                        role: role
-                    });
+                    let res;
+                    if (method === 'id') {
+                        const userId = form.querySelector('[name="user_id"]').value;
+                        if (!userId) return this.app.showError('User ID required');
+                        res = await this.app.apiClient.post(`/organizations/${this.params.id}/members`, {
+                            user_id: userId,
+                            role: role
+                        });
+                    } else {
+                        const email = form.querySelector('[name="email"]').value;
+                        if (!email) return this.app.showError('Email required');
+                        res = await this.app.apiClient.post(`/organizations/${this.params.id}/invite`, {
+                            email: email,
+                            role: role
+                        });
+                    }
 
                     if (res.success) {
-                        this.app.showSuccess('Member added');
+                        this.app.showSuccess(method === 'id' ? 'Member added' : 'Invitation sent');
                         modal.classList.add('hidden');
+                        form.reset();
                         this.loadOrganizationDetails(this.params.id); // Reload
                     } else {
                         this.app.showError(res.message);
                     }
                 } catch (err) {
-                    this.app.showError('Failed to add member');
+                    this.app.showError('Operation failed');
                 }
             });
         }

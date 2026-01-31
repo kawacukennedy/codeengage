@@ -5,6 +5,8 @@
  */
 
 import seoManager from '../modules/utils/seo-manager.js';
+import CollaborativeEditor from '../modules/components/collaborative-editor.js';
+
 
 export class SnippetViewer {
     constructor(app, snippetId) {
@@ -264,8 +266,8 @@ export class SnippetViewer {
 
         // Code Header
         document.getElementById('codeHeader').innerHTML = `
-            < span class="font-mono text-sm text-green-400" > ${this.snippet.language}</span >
-                <span class="text-xs text-gray-500">Version ${this.currentVersion?.version_number || 1}</span>
+            <span class="font-mono text-sm text-neon-blue">${this.snippet.language}</span>
+            <span class="text-xs text-gray-500">Version ${this.currentVersion?.version_number || 1}</span>
         `;
 
         // Sidebar
@@ -334,10 +336,18 @@ export class SnippetViewer {
         const codeElement = document.getElementById('snippetCode');
         const code = this.currentVersion?.code || this.snippet.code || '';
 
-        // Simple highlighting wrapper
-        codeElement.innerHTML = `
-            < pre class="p-4 text-sm font-mono text-gray-300 leading-relaxed overflow-x-auto" > <code>${this.highlightSyntax(code)}</code></pre >
-                `;
+        // Clear previous content
+        codeElement.innerHTML = '';
+        codeElement.className = 'h-96 w-full'; // Ensure height
+
+        // Initialize editor in read-only mode
+        this.editor = new CollaborativeEditor(codeElement, {
+            value: code,
+            language: this.snippet.language,
+            readOnly: true,
+            theme: localStorage.getItem('editor-theme') || 'dracula',
+            lineNumbers: true
+        });
     }
 
     renderVersionsList() {
@@ -348,76 +358,79 @@ export class SnippetViewer {
         }
 
         list.innerHTML = this.snippet.versions.map(v => `
-                < div class="version-item p-3 rounded cursor-pointer transition-colors ${this.currentVersion && this.currentVersion.id === v.id ? 'bg-blue-900 bg-opacity-20 border border-blue-800' : 'hover:bg-gray-700'}"
-        data - version - id="${v.id}" >
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-white">v${v.version_number}</span>
-                <span class="text-xs text-gray-500">${this.formatDate(v.created_at)}</span>
+            <div class="version-item p-3 rounded-xl cursor-pointer transition-all border border-transparent ${this.currentVersion && this.currentVersion.id === v.id ? 'bg-neon-blue/10 border-neon-blue' : 'hover:bg-gray-700/50'}"
+                data-version-id="${v.id}">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-bold text-white">Version ${v.version_number}</span>
+                    <span class="text-[10px] text-gray-500">${this.formatDate(v.created_at)}</span>
+                </div>
+                ${v.change_summary ? `<p class="text-xs text-gray-400 truncate">${this.escapeHtml(v.change_summary)}</p>` : ''}
+                ${this.app.auth.user && this.app.auth.user.id === this.snippet.author_id && this.currentVersion && this.currentVersion.id !== v.id ? `
+                    <button class="mt-2 text-[10px] text-neon-blue hover:underline font-bold" onclick="window.app.currentPage.rollbackToVersion(${v.version_number}, event)">
+                        Rollback to this version
+                    </button>
+                ` : ''}
             </div>
-                ${v.change_summary ? `<p class="text-xs text-gray-400 mt-1 truncate">${this.escapeHtml(v.change_summary)}</p>` : ''}
-            </div >
-            `).join('');
+        `).join('');
 
         list.querySelectorAll('.version-item').forEach(item => {
             item.addEventListener('click', () => {
                 this.loadVersion(item.dataset.versionId);
             });
         });
-    });
 
-    // Setup Timeline Slider
-    const slider = document.getElementById('versionSlider');
-    const timelineContainer = document.getElementById('timelineContainer');
-    if(slider && this.snippet.versions && this.snippet.versions.length > 1) {
-    timelineContainer.classList.remove('hidden');
-    const maxVer = Math.max(...this.snippet.versions.map(v => v.version_number));
-    const minVer = Math.min(...this.snippet.versions.map(v => v.version_number));
-    slider.min = minVer;
-    slider.max = maxVer;
-    slider.value = this.currentVersion ? this.currentVersion.version_number : maxVer;
+        // Setup Timeline Slider
+        const slider = document.getElementById('versionSlider');
+        const timelineContainer = document.getElementById('timelineContainer');
+        if (slider && this.snippet.versions && this.snippet.versions.length > 1) {
+            timelineContainer.classList.remove('hidden');
+            const maxVer = Math.max(...this.snippet.versions.map(v => v.version_number));
+            const minVer = Math.min(...this.snippet.versions.map(v => v.version_number));
+            slider.min = minVer;
+            slider.max = maxVer;
+            slider.value = this.currentVersion ? this.currentVersion.version_number : maxVer;
 
-    document.getElementById('timelineStart').textContent = `v${minVer} `;
-    document.getElementById('timelineEnd').textContent = `v${maxVer} `;
-}
-
-updateVersionSelector(versionId) {
-    // Re-render list to update active state
-    this.renderVersionsList();
-
-    // Update slider value
-    const slider = document.getElementById('versionSlider');
-    if (slider && this.snippet.versions) {
-        // Find index (reverse of version number usually)
-        // Or just map to version number if strictly sequential
-        slider.value = this.currentVersion.version_number;
+            document.getElementById('timelineStart').textContent = `v${minVer}`;
+            document.getElementById('timelineEnd').textContent = `v${maxVer}`;
+        }
     }
 
-    // Show/Hide Diff Button
-    const diffBtn = document.getElementById('diffToggleBtn');
-    if (diffBtn && this.snippet.versions && this.snippet.versions.length > 1) {
-        diffBtn.classList.remove('hidden');
+    updateVersionSelector(versionId) {
+        // Re-render list to update active state
+        this.renderVersionsList();
+
+        // Update slider value
+        const slider = document.getElementById('versionSlider');
+        if (slider && this.snippet.versions && this.currentVersion) {
+            slider.value = this.currentVersion.version_number;
+        }
+
+        // Show/Hide Diff Button
+        const diffBtn = document.getElementById('diffToggleBtn');
+        if (diffBtn && this.snippet.versions && this.snippet.versions.length > 1) {
+            diffBtn.classList.remove('hidden');
+        }
     }
-}
 
-renderAnalysis() {
-    if (!this.analysis) return;
-    const section = document.getElementById('analysisSection');
-    const content = document.getElementById('analysisContent');
-    section.classList.remove('hidden');
+    renderAnalysis() {
+        if (!this.analysis) return;
+        const section = document.getElementById('analysisSection');
+        const content = document.getElementById('analysisContent');
+        section.classList.remove('hidden');
 
-    const results = JSON.parse(this.analysis.results_json || '{}');
-    const complexity = results.complexity || 'N/A';
-    const issues = results.issues || [];
+        const results = JSON.parse(this.analysis.results_json || '{}');
+        const complexity = results.complexity || 'N/A';
+        const issues = results.issues || [];
 
-    let healthColor = 'text-green-400';
-    if (issues.length > 2) healthColor = 'text-red-400';
-    else if (issues.length > 0) healthColor = 'text-yellow-400';
+        let healthColor = 'text-green-400';
+        if (issues.length > 2) healthColor = 'text-red-400';
+        else if (issues.length > 0) healthColor = 'text-yellow-400';
 
-    content.innerHTML = `
-            < div class="flex justify-between text-sm" >
+        content.innerHTML = `
+            <div class="flex justify-between text-sm">
                 <span class="text-gray-400">Complexity</span>
                 <span class="text-white">${complexity}</span>
-            </div >
+            </div>
             <div class="flex justify-between text-sm">
                 <span class="text-gray-400">Issues</span>
                 <span class="${healthColor}">${issues.length} Found</span>
@@ -426,108 +439,107 @@ renderAnalysis() {
                 <div class="mt-2 p-2 bg-gray-900/50 rounded text-xs text-gray-400">
                     ${issues.slice(0, 2).map(i => `<div class="truncate">• ${this.escapeHtml(i.message || i)}</div>`).join('')}
                 </div>
-            ` : ''
-        }
+            ` : ''}
         `;
-}
+    }
 
-renderRelated() {
-    if (!this.relatedSnippets || !this.relatedSnippets.length) return;
-    const section = document.getElementById('relatedSection');
-    const content = document.getElementById('relatedContent');
-    section.classList.remove('hidden');
+    renderRelated() {
+        if (!this.relatedSnippets || !this.relatedSnippets.length) return;
+        const section = document.getElementById('relatedSection');
+        const content = document.getElementById('relatedContent');
+        section.classList.remove('hidden');
 
-    content.innerHTML = this.relatedSnippets.slice(0, 3).map(s => `
-            < a href = "/snippet/${s.id}" class="block p-2 bg-gray-700/50 rounded hover:bg-gray-700 transition-colors" >
+        content.innerHTML = this.relatedSnippets.slice(0, 3).map(s => `
+            <a href="/snippet/${s.id}" class="block p-2 bg-gray-700/50 rounded hover:bg-gray-700 transition-colors">
                 <p class="text-sm text-white truncate">${this.escapeHtml(s.title)}</p>
                 <div class="flex justify-between items-center text-xs text-gray-500 mt-1">
                     <span>${this.escapeHtml(s.language)}</span>
                     <span class="flex items-center"><i class="mr-1">⭐</i>${s.star_count}</span>
                 </div>
-            </a >
-            `).join('');
+            </a>
+        `).join('');
 
-    if (window.vis && typeof window.vis !== 'undefined') {
-        this.renderNetworkGraph();
-    }
-}
-
-renderNetworkGraph() {
-    if (!this.relatedSnippets || !this.relatedSnippets.length) return;
-
-    const graphCard = document.getElementById('graphCard');
-    if (graphCard) graphCard.classList.remove('hidden');
-
-    const container = document.getElementById('networkGraph');
-    if (!container) return;
-
-    const nodes = new vis.DataSet([
-        { id: this.snippet.id, label: 'Current', color: '#7000FF', font: { color: 'white' } },
-        ...this.relatedSnippets.map(s => ({
-            id: s.id,
-            label: s.title.substring(0, 15) + '...',
-            color: '#00F0FF',
-            shape: 'box'
-        }))
-    ]);
-
-    const edges = new vis.DataSet(
-        this.relatedSnippets.map(s => ({ from: this.snippet.id, to: s.id }))
-    );
-
-    const data = { nodes, edges };
-    const options = {
-        nodes: {
-            borderWidth: 1,
-            size: 30,
-            color: {
-                border: '#ffffff',
-                background: '#0B0F19'
-            },
-            font: { color: '#cccccc' }
-        },
-        edges: {
-            color: 'rgba(255,255,255,0.2)',
-            smooth: { type: 'continuous' }
-        },
-        physics: {
-            stabilization: false,
-            barnesHut: {
-                gravitationalConstant: -2000,
-                springConstant: 0.04
-            }
-        },
-        interaction: {
-            dragNodes: false,
-            zoomView: false,
-            dragView: false
+        if (window.vis && typeof window.vis !== 'undefined') {
+            this.renderNetworkGraph();
         }
-    };
+    }
 
-    new vis.Network(container, data, options);
-}
+    renderNetworkGraph() {
+        if (!this.relatedSnippets || !this.relatedSnippets.length) return;
+
+        const graphCard = document.getElementById('graphCard');
+        if (graphCard) graphCard.classList.remove('hidden');
+
+        const container = document.getElementById('networkGraph');
+        if (!container) return;
+
+        const nodes = new vis.DataSet([
+            { id: this.snippet.id, label: 'Current', color: '#7000FF', font: { color: 'white' } },
+            ...this.relatedSnippets.map(s => ({
+                id: s.id,
+                label: s.title.substring(0, 15) + '...',
+                color: '#00F0FF',
+                shape: 'box'
+            }))
+        ]);
+
+        const edges = new vis.DataSet(
+            this.relatedSnippets.map(s => ({ from: this.snippet.id, to: s.id }))
+        );
+
+        const data = { nodes, edges };
+        const options = {
+            nodes: {
+                borderWidth: 1,
+                size: 30,
+                color: {
+                    border: '#ffffff',
+                    background: '#0B0F19'
+                },
+                font: { color: '#cccccc' }
+            },
+            edges: {
+                color: 'rgba(255,255,255,0.2)',
+                smooth: { type: 'continuous' }
+            },
+            physics: {
+                stabilization: false,
+                barnesHut: {
+                    gravitationalConstant: -2000,
+                    springConstant: 0.04
+                }
+            },
+            interaction: {
+                dragNodes: false,
+                zoomView: false,
+                dragView: false
+            }
+        };
+
+        new vis.Network(container, data, options);
+    }
 
     async loadComments(id) {
-    try {
-        const res = await this.app.apiClient.get(`/ snippets / ${id}/comments`);
-        if (res.success) {
-            this.renderComments(res.data);
+        try {
+            const res = await this.app.apiClient.get(`/ snippets / ${id}/comments`);
+            if (res.success) {
+                this.renderComments(res.data);
+            }
+        } catch (err) {
+            console.error('Failed to load comments', err);
         }
-    } catch (err) {
-        console.error('Failed to load comments', err);
-    }
-}
-
-renderComments(comments) {
-    const list = document.getElementById('commentsList');
-    if (!list) return;
-
-    if (!comments.length) {
-        list.innerHTML = '<p class="text-xs text-gray-500 italic">No comments yet</p>';
-        return;
     }
 
-    list.innerHTML = comments.map(c => `
+    renderComments(comments) {
+        const list = document.getElementById('commentsList');
+        if (!list) return;
+
+        if (!comments.length) {
+            list.innerHTML = '<p class="text-xs text-gray-500 italic">No comments yet</p>';
+            return;
+        }
+
+        list.innerHTML = comments.map(c => `
             <div class="group">
                 <div class="flex items-center gap-2 mb-1">
                     <img src="${this.escapeHtml(c.user?.avatar_url || 'https://api.dicebear.com/7.x/initials/svg?seed=' + (c.user?.username || 'U'))}" class="w-4 h-4 rounded-full">
@@ -542,82 +554,137 @@ renderComments(comments) {
                 <p class="text-xs text-gray-400 leading-relaxed">${this.escapeHtml(c.content)}</p>
             </div>
         `).join('');
-}
+    }
 
     async postComment(e) {
-    e.preventDefault();
-    const input = document.getElementById('commentInput');
-    const content = input.value.trim();
-    if (!content) return;
+        e.preventDefault();
+        const input = document.getElementById('commentInput');
+        const content = input.value.trim();
+        if (!content) return;
 
-    try {
-        const res = await this.app.apiClient.post(`/snippets/${this.snippetId}/comments`, { content });
-        if (res.success) {
-            input.value = '';
-            this.loadComments(this.snippetId); // Reload
+        try {
+            const res = await this.app.apiClient.post(`/snippets/${this.snippetId}/comments`, { content });
+            if (res.success) {
+                input.value = '';
+                this.loadComments(this.snippetId); // Reload
+            }
+        } catch (error) {
+            this.app.showError('Failed to post comment');
         }
-    } catch (error) {
-        this.app.showError('Failed to post comment');
     }
-}
 
     async deleteComment(id) {
-    if (!confirm('Delete comment?')) return;
-    try {
-        const res = await this.app.apiClient.delete(`/comments/${id}`);
-        if (res.success) {
-            this.loadComments(this.snippetId);
-        }
-    } catch (error) {
-        this.app.showError('Failed to delete comment');
-    }
-}
-
-setupEventListeners() {
-    const starBtn = document.getElementById('starBtn');
-    if (starBtn) starBtn.addEventListener('click', () => this.toggleStar());
-
-    const forkBtn = document.getElementById('forkBtn');
-    if (forkBtn) forkBtn.addEventListener('click', () => this.forkSnippet());
-
-    const editBtn = document.getElementById('editBtn');
-    if (editBtn) editBtn.addEventListener('click', () => {
-        this.app.router.navigate(`/editor/${this.snippetId}`);
-    });
-
-    const copyBtn = document.getElementById('copyCodeBtn');
-    if (copyBtn) copyBtn.addEventListener('click', () => {
-        const code = this.currentVersion?.code || this.snippet.code || '';
-        navigator.clipboard.writeText(code);
-        this.app.showSuccess('Code copied to clipboard');
-    });
-
-    const commentForm = document.getElementById('commentForm');
-    if (commentForm) commentForm.addEventListener('submit', (e) => this.postComment(e));
-
-    const slider = document.getElementById('versionSlider');
-    if (slider) {
-        slider.addEventListener('input', (e) => {
-            const verNum = parseInt(e.target.value);
-            const version = this.snippet.versions.find(v => v.version_number === verNum);
-            if (version) {
-                this.loadVersion(version.id);
-            }
-        });
-    }
-
-    const diffBtn = document.getElementById('diffToggleBtn');
-    if (diffBtn) diffBtn.addEventListener('click', () => this.toggleDiff());
-
-    async toggleStar() {
+        if (!confirm('Delete comment?')) return;
         try {
-            await this.app.apiClient.post(`/snippets/${this.snippetId}/star`);
-            this.app.showSuccess('Star updated');
-            // Optimistic update
-            // Ideally re-fetch or toggle state
-            this.loadSnippet(this.snippetId); // Reload to get new count
+            const res = await this.app.apiClient.delete(`/comments/${id}`);
+            if (res.success) {
+                this.loadComments(this.snippetId);
+            }
         } catch (error) {
-            console.error('Star error', error);
+            this.app.showError('Failed to delete comment');
+        }
+    }
+
+    setupEventListeners() {
+        const starBtn = document.getElementById('starBtn');
+        if (starBtn) starBtn.addEventListener('click', () => this.toggleStar());
+
+        const forkBtn = document.getElementById('forkBtn');
+        if (forkBtn) forkBtn.addEventListener('click', () => this.forkSnippet());
+
+        const editBtn = document.getElementById('editBtn');
+        if (editBtn) editBtn.addEventListener('click', () => {
+            this.app.router.navigate(`/editor/${this.snippetId}`);
+        });
+
+        const copyBtn = document.getElementById('copyCodeBtn');
+        if (copyBtn) copyBtn.addEventListener('click', () => {
+            const code = this.currentVersion?.code || this.snippet.code || '';
+            navigator.clipboard.writeText(code);
+            this.app.showSuccess('Code copied to clipboard');
+        });
+
+        const commentForm = document.getElementById('commentForm');
+        if (commentForm) commentForm.addEventListener('submit', (e) => this.postComment(e));
+
+        const slider = document.getElementById('versionSlider');
+        if (slider) {
+            slider.addEventListener('input', (e) => {
+                const verNum = parseInt(e.target.value);
+                const version = this.snippet.versions.find(v => v.version_number === verNum);
+                if (version) {
+                    this.loadVersion(version.id);
+                }
+            });
+        }
+
+        const diffBtn = document.getElementById('diffToggleBtn');
+        if (diffBtn) diffBtn.addEventListener('click', () => this.toggleDiff());
+    }
+
+    async toggleDiff() {
+        const diffView = document.getElementById('diffView');
+        const snippetCode = document.getElementById('snippetCode');
+        const diffBtn = document.getElementById('diffToggleBtn');
+
+        if (!diffView.classList.contains('hidden')) {
+            diffView.classList.add('hidden');
+            snippetCode.classList.remove('hidden');
+            diffBtn.textContent = 'Compare with Previous';
+            return;
+        }
+
+        // Find previous version
+        const versions = this.snippet.versions;
+        const index = versions.findIndex(v => v.id === this.currentVersion.id);
+        const prevVersion = versions[index + 1]; // Sorted by latest first
+
+        if (!prevVersion) {
+            this.app.showError('No previous version to compare');
+            return;
+        }
+
+        diffView.classList.remove('hidden');
+        snippetCode.classList.add('hidden');
+        diffBtn.textContent = 'Hide Comparison';
+
+        // simple line-by-line diff
+        const oldLines = prevVersion.code.split('\n');
+        const newLines = this.currentVersion.code.split('\n');
+
+        let diffHtml = '<div class="grid grid-cols-2 gap-4 font-mono text-xs">';
+        diffHtml += '<div class="text-gray-500 uppercase mb-2">Version ' + prevVersion.version_number + '</div>';
+        diffHtml += '<div class="text-gray-500 uppercase mb-2">Version ' + this.currentVersion.version_number + '</div>';
+
+        const maxLines = Math.max(oldLines.length, newLines.length);
+        for (let i = 0; i < maxLines; i++) {
+            const oldLine = oldLines[i] || '';
+            const newLine = newLines[i] || '';
+
+            const isDifferent = oldLine !== newLine;
+            const bgClass = isDifferent ? 'bg-neon-blue/5' : '';
+
+            diffHtml += `<div class="${bgClass} px-2 ${oldLine === '' && i >= oldLines.length ? 'opacity-0' : ''}">${this.escapeHtml(oldLine)}</div>`;
+            diffHtml += `<div class="${bgClass} px-2 ${newLine === '' && i >= newLines.length ? 'opacity-0' : ''}">${this.escapeHtml(newLine)}</div>`;
+        }
+        diffHtml += '</div>';
+        diffView.innerHTML = diffHtml;
+    }
+
+    async rollbackToVersion(versionNumber, event) {
+        if (event) event.stopPropagation();
+        if (!confirm(`Rollback to version ${versionNumber}? This will create a new version.`)) {
+            return;
+        }
+
+        try {
+            await this.app.apiClient.post(`/snippets/${this.snippetId}/rollback`, { version: versionNumber });
+            this.app.showSuccess('Snippet rolled back');
+            await this.loadSnippet(this.snippetId);
+            this.render();
+            this.renderSnippetContent();
+        } catch (error) {
+            this.app.showError('Failed to rollback');
         }
     }
 
@@ -699,10 +766,7 @@ setupEventListeners() {
     }
 
     highlightSyntax(code) {
-        // Basic replacement for demo - in prod use Prism/HLJS
-        return this.escapeHtml(code)
-            .replace(/const|let|var|function|class|import|export|return/g, '<span class="text-purple-400">$&</span>')
-            .replace(/\/\/.*/g, '<span class="text-gray-500">$&</span>');
+        return this.escapeHtml(code);
     }
 }
 

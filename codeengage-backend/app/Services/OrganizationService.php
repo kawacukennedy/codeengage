@@ -78,13 +78,61 @@ class OrganizationService
     {
         $this->ensureAdminOrOwner($orgId, $actorId);
 
-        // Cannot remove self if owner (ownership transfer logic needed for that, but keeping simple for now)
         $org = $this->organizationRepository->findById($orgId);
         if ($org['owner_id'] == $targetUserId) {
             throw new ValidationException('Cannot remove the organization owner');
         }
 
         $this->organizationRepository->removeMember($orgId, $targetUserId);
+    }
+
+    public function updateMemberRole(int $orgId, int $actorId, int $targetUserId, string $role): void
+    {
+        $this->ensureAdminOrOwner($orgId, $actorId);
+        
+        if (!in_array($role, ['admin', 'member', 'viewer'])) {
+            throw new ValidationException('Invalid role');
+        }
+
+        $org = $this->organizationRepository->findById($orgId);
+        if ($org['owner_id'] == $targetUserId) {
+            throw new ValidationException('Cannot change the organization owner role');
+        }
+
+        $this->organizationRepository->updateMemberRole($orgId, $targetUserId, $role);
+    }
+
+    public function inviteMember(int $orgId, int $actorId, string $email, string $role = 'member'): string
+    {
+        $this->ensureAdminOrOwner($orgId, $actorId);
+        
+        $token = bin2hex(random_bytes(32));
+        $this->organizationRepository->createInvite([
+            'organization_id' => $orgId,
+            'email' => $email,
+            'token' => $token,
+            'role' => $role,
+            'inviter_id' => $actorId,
+            'expires_at' => date('Y-m-d H:i:s', time() + 7 * 86400) // 7 days
+        ]);
+
+        return $token;
+    }
+
+    public function acceptInvite(string $token, int $userId): int
+    {
+        $invite = $this->organizationRepository->getInviteByToken($token);
+        if (!$invite) {
+            throw new ValidationException('Invalid or expired invitation');
+        }
+
+        // Add user to organization
+        $this->organizationRepository->addMember($invite['organization_id'], $userId, $invite['role']);
+        
+        // Mark invite accepted
+        $this->organizationRepository->markInviteAccepted($invite['id']);
+
+        return $invite['organization_id'];
     }
 
     private function ensureMember(int $orgId, int $userId): void

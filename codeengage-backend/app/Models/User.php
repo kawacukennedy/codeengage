@@ -23,6 +23,8 @@ class User
     private ?string $lastActiveAt = null;
     private ?string $emailVerifiedAt = null;
     private int $achievementPoints = 0;
+    private int $loginAttempts = 0;
+    private ?string $lockoutUntil = null;
 
     public function __construct(PDO $pdo)
     {
@@ -51,6 +53,8 @@ class User
         $user->lastActiveAt = $data['last_active_at'] ?? null;
         $user->emailVerifiedAt = $data['email_verified_at'] ?? null;
         $user->achievementPoints = $data['achievement_points'] ?? 0;
+        $user->loginAttempts = $data['login_attempts'] ?? 0;
+        $user->lockoutUntil = $data['lockout_until'] ?? null;
         
         return $user;
     }
@@ -102,10 +106,10 @@ class User
         $stmt = $this->pdo->prepare("
             INSERT INTO users (
                 username, email, password_hash, display_name, bio, avatar_url, 
-                role, preferences, achievement_points, created_at, updated_at
+                role, preferences, achievement_points, login_attempts, lockout_until, created_at, updated_at
             ) VALUES (
                 :username, :email, :password_hash, :display_name, :bio, :avatar_url,
-                :role, :preferences, :achievement_points, :created_at, :updated_at
+                :role, :preferences, :achievement_points, :login_attempts, :lockout_until, :created_at, :updated_at
             )
         ");
 
@@ -119,6 +123,8 @@ class User
             ':role' => $this->role,
             ':preferences' => json_encode($this->preferences),
             ':achievement_points' => $this->achievementPoints,
+            ':login_attempts' => $this->loginAttempts,
+            ':lockout_until' => $this->lockoutUntil,
             ':created_at' => $this->createdAt,
             ':updated_at' => $this->updatedAt
         ]);
@@ -145,6 +151,8 @@ class User
                 role = :role,
                 preferences = :preferences,
                 achievement_points = :achievement_points,
+                login_attempts = :login_attempts,
+                lockout_until = :lockout_until,
                 updated_at = :updated_at
             WHERE id = :id
         ");
@@ -160,6 +168,8 @@ class User
             ':role' => $this->role,
             ':preferences' => json_encode($this->preferences),
             ':achievement_points' => $this->achievementPoints,
+            ':login_attempts' => $this->loginAttempts,
+            ':lockout_until' => $this->lockoutUntil,
             ':updated_at' => $this->updatedAt
         ]);
     }
@@ -185,6 +195,8 @@ class User
         $this->lastActiveAt = $data['last_active_at'] ?? null;
         $this->emailVerifiedAt = $data['email_verified_at'] ?? null;
         $this->achievementPoints = isset($data['achievement_points']) ? (int)$data['achievement_points'] : 0;
+        $this->loginAttempts = isset($data['login_attempts']) ? (int)$data['login_attempts'] : 0;
+        $this->lockoutUntil = $data['lockout_until'] ?? null;
         
         $prefs = $data['preferences'] ?? null;
         if (is_string($prefs)) {
@@ -267,4 +279,10 @@ class User
     { 
         return $this->emailVerifiedAt ? new \DateTimeImmutable($this->emailVerifiedAt) : null; 
     }
+
+    public function getLoginAttempts(): int { return $this->loginAttempts; }
+    public function setLoginAttempts(int $attempts): void { $this->loginAttempts = $attempts; }
+
+    public function getLockoutUntil(): ?string { return $this->lockoutUntil; }
+    public function setLockoutUntil(?string $timestamp): void { $this->lockoutUntil = $timestamp; }
 }

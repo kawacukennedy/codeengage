@@ -24,7 +24,15 @@ class AuthController
         }
 
         $input = json_decode(file_get_contents('php://input'), true);
-        $result = $this->authService->login($input['email'] ?? '', $input['password'] ?? '');
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        
+        $result = $this->authService->login(
+            $input['email'] ?? '', 
+            $input['password'] ?? '',
+            $ipAddress,
+            $userAgent
+        );
         
         ApiResponse::success($result, 'Login successful');
     }

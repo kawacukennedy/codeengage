@@ -73,6 +73,8 @@ class AuthMiddleware
             if ($payload && isset($payload['user_id'])) {
                 $user = $this->userRepository->findById($payload['user_id']);
                 if ($user) {
+                    $_SESSION['user_id'] = $user->getId();
+                    $_SESSION['role'] = $user->getRole();
                     return $user;
                 }
             }

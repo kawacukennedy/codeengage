@@ -180,7 +180,8 @@ try {
         'export' => 'Export',
         'tags' => 'Tag',
         'organizations' => 'Organization',
-        'api-keys' => 'ApiKey'
+        'api-keys' => 'ApiKey',
+        'errors' => 'Error'
     ];
 
     // Special routing for snippets (default)

@@ -115,6 +115,45 @@ export class CommandPalette {
             keywords: ['theme', 'dark', 'light']
         });
 
+        this.register('theme-dracula', {
+            title: 'Theme: Dracula',
+            description: 'Switch editor theme to Dracula',
+            icon: '🧛',
+            action: () => this.setEditorTheme('dracula'),
+            category: 'settings',
+            condition: () => !!this.getEditor()
+        });
+
+        this.register('theme-nord', {
+            title: 'Theme: Nord',
+            description: 'Switch editor theme to Nord',
+            icon: '❄️',
+            action: () => this.setEditorTheme('nord'),
+            category: 'settings',
+            condition: () => !!this.getEditor()
+        });
+
+        // Editor Productivity
+        this.register('toggle-focus', {
+            title: 'Toggle Focus Mode',
+            description: 'Hide UI for distraction-free editing',
+            icon: '🎯',
+            action: () => this.getEditor()?.toggleFocusMode(),
+            category: 'editor',
+            keywords: ['focus', 'zen', 'distraction'],
+            condition: () => !!this.getEditor()
+        });
+
+        this.register('toggle-markdown', {
+            title: 'Toggle Markdown Preview',
+            description: 'Show/hide live markdown preview',
+            icon: '📖',
+            action: () => this.getEditor()?.toggleMarkdownPreview(),
+            category: 'editor',
+            keywords: ['preview', 'markdown', 'split'],
+            condition: () => !!this.getEditor()
+        });
+
         // User commands
         this.register('logout', {
             title: 'Logout',
@@ -194,6 +233,18 @@ export class CommandPalette {
             category: 'admin',
             condition: () => window.app.authManager.hasRole('admin')
         });
+    }
+
+    getEditor() {
+        return window.app?.currentPage?.editor;
+    }
+
+    setEditorTheme(theme) {
+        const editor = this.getEditor();
+        if (editor) {
+            editor.setOption('theme', theme);
+            window.app.showSuccess(`Theme set to ${theme}`);
+        }
     }
 
     register(name, command) {
@@ -301,7 +352,22 @@ export class CommandPalette {
 
         // 2. Search snippets from backend
         try {
-            const snippets = await window.app.apiClient.get(`/snippets?search=${encodeURIComponent(query)}&limit=5`);
+            const response = await window.app.apiClient.get(`/snippets?search=${encodeURIComponent(query)}&limit=5`);
+
+            let snippets = [];
+            if (Array.isArray(response)) {
+                snippets = response;
+            } else if (response && response.snippets) {
+                snippets = response.snippets;
+            } else if (response && response.data) {
+                // Handle wrapped response properly
+                if (Array.isArray(response.data)) {
+                    snippets = response.data;
+                } else if (response.data.snippets) {
+                    snippets = response.data.snippets;
+                }
+            }
+
             if (snippets && Array.isArray(snippets)) {
                 snippets.forEach(snippet => {
                     results.push({
@@ -310,7 +376,7 @@ export class CommandPalette {
                         description: snippet.description || `Language: ${snippet.language}`,
                         icon: '📄',
                         type: 'snippet',
-                        action: () => window.app.router.navigate(`/snippets/${snippet.id}`),
+                        action: () => window.app.router.navigate(`/snippet/${snippet.id}`),
                         score: 70 // High enough to appear but below exact command matches
                     });
                 });
@@ -329,64 +395,56 @@ export class CommandPalette {
         query = query.toLowerCase();
         let score = 0;
 
-        // Exact title match
-        if (command.title.toLowerCase().includes(query)) {
-            score += 100;
-        }
+        const title = command.title.toLowerCase();
+        const description = (command.description || '').toLowerCase();
+        const keywords = command.keywords || [];
 
-        // Exact name match
-        if (name.toLowerCase().includes(query)) {
-            score += 80;
-        }
+        // Exact match (highest weight)
+        if (title === query) score += 1000;
+        if (name === query) score += 900;
 
-        // Description match
-        if (command.description.toLowerCase().includes(query)) {
-            score += 60;
-        }
+        // Title matches
+        if (title.startsWith(query)) score += 500;
+        if (title.includes(query)) score += 300;
 
-        // Keywords match
-        if (command.keywords) {
-            for (const keyword of command.keywords) {
-                if (keyword.toLowerCase().includes(query)) {
-                    score += 40;
-                    break;
-                }
-            }
-        }
+        // Keyword matches
+        keywords.forEach(kw => {
+            if (kw.toLowerCase() === query) score += 400;
+            if (kw.toLowerCase().includes(query)) score += 100;
+        });
 
-        // Category match
-        if (command.category && command.category.toLowerCase().includes(query)) {
-            score += 20;
-        }
+        // Fuzzy match title
+        const fuzzyScore = this.fuzzyMatch(query, title);
+        score += fuzzyScore * 50;
 
-        // Fuzzy matching for title
-        score += this.fuzzyMatch(query, command.title.toLowerCase()) * 10;
+        // Description match (lowest weight)
+        if (description.includes(query)) score += 50;
 
         return score;
     }
 
     fuzzyMatch(query, text) {
-        if (query.length === 0) return 0;
-        if (text.length === 0) return 0;
-
+        if (!query) return 1;
         let score = 0;
-        let queryIndex = 0;
-        let textIndex = 0;
+        let queryIdx = 0;
+        let lastIdx = -1;
 
-        while (queryIndex < query.length && textIndex < text.length) {
-            if (query[queryIndex] === text[textIndex]) {
-                score += 1;
-                queryIndex++;
-            }
-            textIndex++;
+        for (let i = 0; i < query.length; i++) {
+            const char = query[i];
+            const idx = text.indexOf(char, lastIdx + 1);
+            if (idx === -1) return 0; // Not a fuzzy match
+
+            // Bonus for consecutive characters
+            if (idx === lastIdx + 1) score += 5;
+
+            // Bonus for starting character match
+            if (idx === 0) score += 10;
+
+            lastIdx = idx;
+            queryIdx++;
         }
 
-        // Bonus for complete matches
-        if (queryIndex === query.length) {
-            score += query.length * 2;
-        }
-
-        return score;
+        return score + (queryIdx / text.length) * 10;
     }
 
     displayResults(results) {

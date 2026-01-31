@@ -22,7 +22,11 @@ return new class {
         $db->exec($sql);
         
         // Add index on user_id and is_read for performance
-        $db->exec("CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read)");
+        try {
+            $db->exec("CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read)");
+        } catch (\PDOException $e) {
+            // Index might already exist
+        }
     }
 
     public function down(PDO $db): void

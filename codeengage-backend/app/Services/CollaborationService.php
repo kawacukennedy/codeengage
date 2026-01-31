@@ -116,14 +116,23 @@ class CollaborationService
              ApiResponse::error('Snippet is locked by another user', 403);
         }
 
-        $cursors = json_decode($session['cursor_positions'], true) ?? [];
-        if (isset($data['cursor'])) {
-            $cursors[$userId] = $data['cursor'];
+        $clientVersion = (int)($data['v'] ?? 0);
+        $currentVersion = (int)($session['version'] ?? 0);
+
+        if ($clientVersion < $currentVersion && isset($data['change'])) {
+             // Conflict detected!
+             return [
+                 'success' => false, 
+                 'error' => 'conflict', 
+                 'current_version' => $currentVersion,
+                 'message' => 'Your version is out of date. Please merge changes.'
+             ];
         }
-        
+
         $updateData = [
             'cursor_positions' => json_encode($cursors),
-            'last_activity' => date('Y-m-d H:i:s')
+            'last_activity' => date('Y-m-d H:i:s'),
+            'version' => $currentVersion + 1
         ];
         
         $codeChange = $data['change'] ?? null;
@@ -135,31 +144,76 @@ class CollaborationService
 
         $this->collaborationRepository->update($session['id'], $updateData);
         
-        return ['success' => true];
+        return ['success' => true, 'version' => $currentVersion + 1];
     }
 
-    public function pollUpdates($token, $lastUpdateTimestamp)
+    public function pollUpdates($token, $lastVersion, $userId)
     {
         $startTime = time();
         $timeout = 25;
+
+        // Track activity immediately
+        $this->trackActivity($token, $userId);
 
         while (time() - $startTime < $timeout) {
             $session = $this->collaborationRepository->findByToken($token);
             if (!$session) return null;
             
-            $dbLastActivity = strtotime($session['last_activity']);
+            $dbVersion = (int)($session['version'] ?? 0);
             
-            if ($dbLastActivity > $lastUpdateTimestamp) {
+            if ($dbVersion > $lastVersion) {
                 return [
-                    'last_activity' => $dbLastActivity,
+                    'version' => $dbVersion,
+                    'last_activity' => strtotime($session['last_activity']),
                     'cursors' => json_decode($session['cursor_positions'], true),
-                    'participants' => json_decode($session['participants'], true),
+                    'participants' => $this->getDetailedParticipants($session),
                     'metadata' => json_decode($session['metadata'] ?? '{}', true)
                 ];
             }
-            usleep(1000000);
+            usleep(500000); // Poll every 0.5s for faster responsiveness
         }
-        return null;
+        return ['version' => $lastVersion, 'status' => 'timeout'];
+    }
+
+    private function trackActivity($token, $userId)
+    {
+        $session = $this->collaborationRepository->findByToken($token);
+        if (!$session) return;
+
+        $metadata = json_decode($session['metadata'] ?? '{}', true);
+        $metadata['last_seen'] = $metadata['last_seen'] ?? [];
+        $metadata['last_seen'][$userId] = time();
+
+        $this->collaborationRepository->update($session['id'], [
+            'metadata' => json_encode($metadata),
+            'version' => $session['version'] // Don't increment version just for activity tracking
+        ]);
+    }
+
+    private function getDetailedParticipants($session)
+    {
+        $participants = json_decode($session['participants'], true) ?? [];
+        $metadata = json_decode($session['metadata'] ?? '{}', true);
+        $lastSeen = $metadata['last_seen'] ?? [];
+        
+        $detailed = [];
+        $userRepo = new \App\Repositories\UserRepository($this->collaborationRepository->getDb());
+        
+        foreach ($participants as $userId) {
+            $lastSeenTime = $lastSeen[$userId] ?? 0;
+            if (time() - $lastSeenTime > 60) continue; // Inactive for 1min
+
+            $user = $userRepo->findById($userId);
+            if ($user) {
+                $detailed[] = [
+                    'id' => $user->getId(),
+                    'display_name' => $user->getDisplayName() ?: $user->getUsername(),
+                    'role' => $metadata['permissions'][$userId] ?? 'viewer',
+                    'last_seen' => $lastSeenTime
+                ];
+            }
+        }
+        return $detailed;
     }
 
     public function sendMessage($token, $userId, $message, $lineRef = null)

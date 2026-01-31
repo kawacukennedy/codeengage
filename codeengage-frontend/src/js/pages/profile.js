@@ -14,7 +14,8 @@ export class Profile {
             user: null,
             snippets: [],
             achievements: [],
-            stats: null
+            stats: null,
+            sessions: []
         };
     }
 
@@ -32,12 +33,13 @@ export class Profile {
      */
     async loadProfileData() {
         try {
-            const [userResponse, snippetsResponse, achievementsResponse, statsResponse, activityResponse] = await Promise.all([
+            const [userResponse, snippetsResponse, achievementsResponse, statsResponse, activityResponse, sessionsResponse] = await Promise.all([
                 this.app.apiClient.get('/users/me'),
                 this.app.apiClient.get('/users/me/snippets'),
                 this.app.apiClient.get('/users/me/achievements'),
                 this.app.apiClient.get('/users/me/stats'),
-                this.app.apiClient.get('/users/me/activity')
+                this.app.apiClient.get('/users/me/activity'),
+                this.app.apiClient.get('/users/me/sessions')
             ]);
 
             this.data.user = userResponse.data;
@@ -53,6 +55,7 @@ export class Profile {
             this.data.achievements = achievementsResponse.data?.achievements || [];
             this.data.stats = statsResponse.data;
             this.data.activity = activityResponse.data || [];
+            this.data.sessions = sessionsResponse.data || [];
         } catch (error) {
             console.error('Failed to load profile data:', error);
             this.app.showError('Failed to load profile');
@@ -123,6 +126,7 @@ export class Profile {
                             <button class="tab-btn active" data-tab="snippets">My Snippets</button>
                             <button class="tab-btn" data-tab="activity">Activity</button>
                             <button class="tab-btn" data-tab="achievements">Achievements</button>
+                            <button class="tab-btn" data-tab="security">Security</button>
                             <button class="tab-btn" data-tab="settings">Settings</button>
                         </div>
                         
@@ -136,6 +140,10 @@ export class Profile {
                         
                         <div class="tab-content hidden" id="achievements-tab">
                             ${this.renderAchievementsTab()}
+                        </div>
+
+                        <div class="tab-content hidden" id="security-tab">
+                            ${this.renderSecurityTab()}
                         </div>
                         
                         <div class="tab-content hidden" id="settings-tab">
@@ -279,9 +287,8 @@ export class Profile {
         }
 
         return `
-        return `
-            < div class="space-y-6 animate-slideUp" >
-                < !--Activity Heatmap-- >
+            <div class="space-y-6 animate-slideUp">
+                <!-- Activity Heatmap -->
                 <div class="glass-panel p-6 rounded-2xl border border-gray-700/50">
                     <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <i class="ph ph-squares-four text-neon-blue"></i>
@@ -290,9 +297,9 @@ export class Profile {
                     ${this.renderHeatmap()}
                 </div>
 
-                <!--Activity List-- >
-            <div class="space-y-4">
-                ${this.data.activity.map(item => `
+                <!-- Activity List -->
+                <div class="space-y-4">
+                    ${this.data.activity.map(item => `
                         <div class="glass-panel p-4 flex items-center gap-4 hover:border-gray-600 transition-colors">
                             <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
                                 ${this.getActivityIcon(item.type)}
@@ -306,19 +313,16 @@ export class Profile {
                             ` : ''}
                         </div>
                     `).join('')}
+                </div>
             </div>
-            </div >
-            `;
+        `;
     }
 
     renderHeatmap() {
-        // Mock data or real aggregation
-        // Generate last 365 days
         const days = 365;
         const today = new Date();
         const activityMap = {};
-        
-        // Aggregate actual activity
+
         this.data.activity.forEach(a => {
             const date = new Date(a.created_at).toISOString().split('T')[0];
             activityMap[date] = (activityMap[date] || 0) + 1;
@@ -330,20 +334,19 @@ export class Profile {
             date.setDate(date.getDate() - i);
             const dateStr = date.toISOString().split('T')[0];
             const count = activityMap[dateStr] || 0;
-            
-            // Color scale
+
             let colorClass = 'bg-gray-800';
             if (count > 0) colorClass = 'bg-green-900/40';
             if (count > 2) colorClass = 'bg-green-700/60';
             if (count > 4) colorClass = 'bg-green-500';
-            
-            squares += `< div class="w-3 h-3 rounded-sm ${colorClass}" title = "${dateStr}: ${count} actions" ></div > `;
+
+            squares += `<div class="w-3 h-3 rounded-sm ${colorClass}" title="${dateStr}: ${count} actions"></div>`;
         }
 
         return `
-            < div class="flex flex-wrap gap-1 justify-center max-w-full overflow-hidden" style = "max-height: 140px;" >
-                ${ squares }
-            </div >
+            <div class="flex flex-wrap gap-1 justify-center max-w-full overflow-hidden" style="max-height: 140px;">
+                ${squares}
+            </div>
             <div class="flex justify-end items-center gap-2 mt-2 text-xs text-gray-500">
                 <span>Less</span>
                 <div class="w-3 h-3 bg-gray-800 rounded-sm"></div>
@@ -369,12 +372,10 @@ export class Profile {
      * Render snippets tab content
      */
     /**
-     * Render snippets tab content
-     */
     renderSnippetsTab() {
         if (!this.data.snippets.length) {
             return `
-            < div class="flex flex-col items-center justify-center py-20 text-center animate-fade-in" >
+                <div class="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
                     <div class="w-16 h-16 rounded-full bg-gray-800/50 flex items-center justify-center mb-6">
                         <i class="ph ph-code text-neon-blue text-3xl"></i>
                     </div>
@@ -383,14 +384,14 @@ export class Profile {
                     <a href="/new" class="px-6 py-3 rounded-xl bg-gradient-to-r from-neon-blue to-neon-purple text-white font-bold shadow-neon hover:opacity-90 transition-all flex items-center gap-2">
                         <i class="ph ph-plus"></i> Create Snippet
                     </a>
-                </div >
+                </div>
             `;
         }
 
         return `
-            < div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slideUp" >
-                ${ this.data.snippets.map(snippet => this.renderSnippetCard(snippet)).join('') }
-            </div >
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slideUp">
+                ${this.data.snippets.map(snippet => this.renderSnippetCard(snippet)).join('')}
+            </div>
             `;
     }
 
@@ -399,7 +400,7 @@ export class Profile {
      */
     renderSnippetCard(snippet) {
         return `
-            < div class="glass-panel group hover:border-gray-600 transition-all duration-300 cursor-pointer relative overflow-hidden" data - id="${snippet.id}" >
+            <div class="glass-panel group hover:border-gray-600 transition-all duration-300 cursor-pointer relative overflow-hidden" data-id="${snippet.id}">
                 <div class="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-neon-purple/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="p-6 relative z-10">
                     <div class="flex justify-between items-start mb-4">
@@ -444,8 +445,8 @@ export class Profile {
                         </span>
                     </div>
                 </div>
-            </div >
-            `;
+            </div>
+        `;
     }
 
     getLanguageColor(lang) {
@@ -466,50 +467,44 @@ export class Profile {
     renderAchievementsTab() {
         if (!this.data.achievements || !this.data.achievements.length) {
             return `
-            < div class="flex flex-col items-center justify-center py-20 text-center animate-fade-in" >
+                <div class="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
                     <div class="w-16 h-16 rounded-full bg-gray-800/50 flex items-center justify-center mb-6">
                         <i class="ph ph-trophy text-yellow-500 text-3xl"></i>
                     </div>
                     <h3 class="text-xl font-bold text-white mb-2">No achievements found</h3>
                     <p class="text-gray-400">Something went wrong loading achievements.</p>
-                </div >
+                </div>
             `;
         }
 
         return `
-            < div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-slideUp" >
-                ${
-                    this.data.achievements.map(achievement => {
-                        const isUnlocked = achievement.unlocked;
-                        return `
-                    <div class="glass-panel p-6 text-center group hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden ${isUnlocked ? 'border-yellow-500/30' : 'opacity-60 grayscale'}">
-                        ${isUnlocked ? '<div class="absolute inset-0 bg-yellow-500/5 blur-xl"></div>' : ''}
-                        
-                        <div class="relative z-10">
-                            <div class="w-16 h-16 mx-auto rounded-full bg-gray-900 border-2 ${isUnlocked ? 'border-yellow-500 shadow-lg shadow-yellow-500/20' : 'border-gray-700'} flex items-center justify-center mb-4 text-3xl relative">
-                                ${achievement.icon || '🏅'}
-                                ${!isUnlocked ? '<div class="absolute -bottom-1 -right-1 bg-gray-800 border border-gray-600 rounded-full p-1"><i class="ph ph-lock-key text-xs text-gray-400"></i></div>' : ''}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-slideUp">
+                ${this.data.achievements.map(achievement => {
+            const isUnlocked = achievement.unlocked;
+            return `
+                        <div class="glass-panel p-6 text-center group hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden ${isUnlocked ? 'border-yellow-500/30' : 'opacity-60 grayscale'}">
+                            ${isUnlocked ? '<div class="absolute inset-0 bg-yellow-500/5 blur-xl"></div>' : ''}
+                            <div class="relative z-10">
+                                <div class="w-16 h-16 mx-auto rounded-full bg-gray-900 border-2 ${isUnlocked ? 'border-yellow-500 shadow-lg shadow-yellow-500/20' : 'border-gray-700'} flex items-center justify-center mb-4 text-3xl relative">
+                                    ${achievement.icon || '🏅'}
+                                    ${!isUnlocked ? '<div class="absolute -bottom-1 -right-1 bg-gray-800 border border-gray-600 rounded-full p-1"><i class="ph ph-lock-key text-xs text-gray-400"></i></div>' : ''}
+                                </div>
+                                <h4 class="font-bold text-white mb-2">${this.escapeHtml(achievement.name)}</h4>
+                                <p class="text-xs text-gray-400 mb-3 h-8 line-clamp-2">${this.escapeHtml(achievement.description)}</p>
+                                <div class="inline-flex items-center px-2 py-1 rounded ${isUnlocked ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' : 'bg-gray-800 border-gray-700 text-gray-500'} border text-xs font-mono font-bold">
+                                    ${isUnlocked ? 'EARNED' : `+${achievement.points} XP`}
+                                </div>
+                                ${isUnlocked && achievement.earned_at ? `
+                                <div class="mt-3 text-[10px] text-gray-500 uppercase tracking-wider">
+                                    ${new Date(achievement.earned_at).toLocaleDateString()}
+                                </div>
+                                ` : ''}
                             </div>
-                            
-                            <h4 class="font-bold text-white mb-2">${this.escapeHtml(achievement.name)}</h4>
-                            <p class="text-xs text-gray-400 mb-3 h-8 line-clamp-2">${this.escapeHtml(achievement.description)}</p>
-                            
-                            <div class="inline-flex items-center px-2 py-1 rounded ${isUnlocked ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' : 'bg-gray-800 border-gray-700 text-gray-500'} border text-xs font-mono font-bold">
-                                ${isUnlocked ? 'EARNED' : `+${achievement.points} XP`}
-                            </div>
-                            
-                            ${isUnlocked && achievement.earned_at ? `
-                            <div class="mt-3 text-[10px] text-gray-500 uppercase tracking-wider">
-                                ${new Date(achievement.earned_at).toLocaleDateString()}
-                            </div>
-                            ` : ''}
                         </div>
-                    </div>
                     `;
-                    }).join('')
-        }
-            </div >
-            `;
+        }).join('')}
+            </div>
+        `;
     }
 
     getBadgeIcon(iconName) {
@@ -530,7 +525,7 @@ export class Profile {
      */
     renderSettingsTab() {
         return `
-            < div class="flex flex-col items-center justify-center py-20 text-center animate-fade-in" >
+            <div class="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
                 <div class="w-16 h-16 rounded-full bg-gray-800/50 flex items-center justify-center mb-6">
                     <i class="ph ph-gear text-gray-400 text-3xl"></i>
                 </div>
@@ -541,8 +536,96 @@ export class Profile {
                 <a href="/settings" class="px-6 py-3 rounded-xl bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors flex items-center gap-2">
                      Go to Settings <i class="ph ph-arrow-right"></i>
                 </a>
-            </div >
-            `;
+            </div>
+        `;
+    }
+
+    renderSecurityTab() {
+        if (!this.data.sessions || !this.data.sessions.length) {
+            return '<p class="empty-state">No active sessions found.</p>';
+        }
+
+        return `
+            <div class="space-y-6 animate-slideUp">
+                <div class="glass-panel p-6 rounded-2xl border border-gray-700/50">
+                    <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="ph ph-shield-check text-neon-blue"></i>
+                        Active Sessions
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        ${this.data.sessions.map(session => `
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-gray-800/30 border border-gray-700/50">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center text-neon-blue">
+                                        <i class="ph ph-${this.getDeviceIcon(session.user_agent)} text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-medium text-sm">
+                                            ${this.parseUserAgent(session.user_agent)}
+                                            ${session.id === this.app.auth.getSessionId() ? '<span class="ml-2 text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded uppercase font-bold">Current</span>' : ''}
+                                        </p>
+                                        <p class="text-xs text-gray-500">
+                                            ${session.ip_address || 'Unknown IP'} • Last active ${this.formatDate(session.last_used_at)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button class="px-3 py-1.5 rounded-lg border border-red-500/50 text-red-400 text-xs font-bold hover:bg-red-500/10 transition-colors"
+                                        onclick="window.app.currentPage.revokeSession(${session.id}, event)">
+                                    Revoke
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border border-gray-700/50 bg-gradient-to-br from-red-500/5 to-transparent">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="ph ph-warning-circle text-red-500"></i>
+                         Danger Zone
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-6">
+                        Revoke all other active sessions except for your current one. This will force a logout on all other devices.
+                    </p>
+                    <button class="px-6 py-2.5 rounded-xl bg-red-500/10 border border-red-500/50 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-all">
+                        Logout all other devices
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    getDeviceIcon(ua) {
+        if (!ua) return 'monitor';
+        ua = ua.toLowerCase();
+        if (ua.includes('mobi')) return 'device-mobile';
+        if (ua.includes('tablet')) return 'device-tablet';
+        return 'monitor';
+    }
+
+    parseUserAgent(ua) {
+        if (!ua) return 'Unknown Device';
+        // Simple parser
+        if (ua.includes('Chrome')) return 'Google Chrome';
+        if (ua.includes('Firefox')) return 'Mozilla Firefox';
+        if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Apple Safari';
+        if (ua.includes('Edge')) return 'Microsoft Edge';
+        return 'Web Browser';
+    }
+
+    async revokeSession(sessionId, event) {
+        if (!confirm('Are you sure you want to revoke this session? The device will be logged out.')) {
+            return;
+        }
+
+        try {
+            await this.app.apiClient.post('/users/me/sessions/revoke', { token_id: sessionId });
+            this.app.showSuccess('Session revoked');
+            await this.loadProfileData();
+            this.render();
+        } catch (error) {
+            this.app.showError('Failed to revoke session');
+        }
     }
 
     /**
@@ -565,7 +648,7 @@ export class Profile {
             card.addEventListener('click', (e) => {
                 if (!e.target.matches('a')) {
                     const snippetId = card.dataset.id;
-                    window.location.href = `/ snippet / ${ snippetId } `;
+                    window.location.href = `/ snippet / ${snippetId} `;
                 }
             });
         });
@@ -585,7 +668,7 @@ export class Profile {
             content.classList.add('hidden');
         });
 
-        const activeTab = document.getElementById(`${ tabName } -tab`);
+        const activeTab = document.getElementById(`${tabName} -tab`);
         if (activeTab) {
             activeTab.classList.remove('hidden');
         }

@@ -11,6 +11,7 @@ export class Auth {
         this.app = app;
         this.user = null;
         this.token = getLocal('auth_token');
+        this.sessionId = getLocal('auth_session_id');
 
         if (this.token) {
             this.app.apiClient.setAuthToken(this.token);
@@ -50,8 +51,8 @@ export class Auth {
         try {
             const response = await this.app.apiClient.post('/auth/login', { email, password });
 
-            if (response.data.token) {
-                this.setSession(response.data.token, response.data.user);
+            if (response.data.access_token) {
+                this.setSession(response.data.access_token, response.data.user, response.data.session_id);
                 return { success: true };
             }
 
@@ -111,11 +112,13 @@ export class Auth {
      * @param {string} token - JWT token
      * @param {object} user - User object
      */
-    setSession(token, user) {
+    setSession(token, user, sessionId) {
         this.token = token;
         this.user = user;
+        this.sessionId = sessionId;
 
         setLocal('auth_token', token);
+        setLocal('auth_session_id', sessionId);
         this.app.apiClient.setAuthToken(token);
     }
 
@@ -125,9 +128,15 @@ export class Auth {
     clearSession() {
         this.token = null;
         this.user = null;
+        this.sessionId = null;
 
         removeLocal('auth_token');
+        removeLocal('auth_session_id');
         this.app.apiClient.setAuthToken(null);
+    }
+
+    getSessionId() {
+        return this.sessionId;
     }
 
     /**

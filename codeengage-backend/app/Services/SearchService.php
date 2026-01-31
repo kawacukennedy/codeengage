@@ -141,7 +141,8 @@ class SearchService
                 'pages' => ceil($total / $limit)
             ],
             'search_time' => 0,
-            'query' => ''
+            'query' => '',
+            'total' => $total
         ];
     }
 
@@ -161,7 +162,8 @@ class SearchService
                 'pages' => ceil($total / $limit)
             ],
             'search_time' => microtime(true) - $startTime,
-            'query' => $query
+            'query' => $query,
+            'total' => $total
         ];
     }
 

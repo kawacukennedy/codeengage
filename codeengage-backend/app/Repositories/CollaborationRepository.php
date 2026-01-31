@@ -102,7 +102,7 @@ class CollaborationRepository
         $setClause = [];
         $params = [':id' => $id];
 
-        $allowedFields = ['participants', 'cursor_positions', 'last_activity', 'metadata'];
+        $allowedFields = ['participants', 'cursor_positions', 'last_activity', 'metadata', 'version'];
         
         foreach ($allowedFields as $field) {
             if (isset($data[$field])) {
@@ -111,8 +111,9 @@ class CollaborationRepository
             }
         }
 
-        if (empty($setClause)) {
-            return false;
+        // Always increment version if not explicitly set
+        if (!isset($data['version'])) {
+            $setClause[] = "version = version + 1";
         }
 
         $sql = "UPDATE collaboration_sessions SET " . implode(', ', $setClause) . " WHERE id = :id";

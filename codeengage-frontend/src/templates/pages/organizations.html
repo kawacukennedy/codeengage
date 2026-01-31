@@ -202,17 +202,34 @@
             <div class="bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <h3 class="text-lg leading-6 font-medium text-white" id="modal-title">Add Team Member</h3>
                 <div class="mt-4">
-                    <p class="text-sm text-gray-400 mb-4">Enter the User ID of the person you want to invite (Email
-                        search coming soon).</p>
-                    <form id="add-member-form">
-                        <input type="number" name="user_id" placeholder="User ID"
-                            class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-neon-blue focus:border-neon-blue"
-                            required>
-                        <div class="mt-4 flex space-x-4">
+                    <p class="text-sm text-gray-400 mb-4">You can add a member by User ID or send an invitation via Email.</p>
+                    <form id="add-member-form" class="space-y-4">
+                        <div id="method-selector" class="flex space-x-4 mb-4">
+                            <label class="flex items-center text-sm text-gray-300">
+                                <input type="radio" name="add_method" value="id" checked class="mr-2"> Direct ID
+                            </label>
+                            <label class="flex items-center text-sm text-gray-300">
+                                <input type="radio" name="add_method" value="email" class="mr-2"> Email Invite
+                            </label>
+                        </div>
+
+                        <div id="id-input-container">
+                            <input type="number" name="user_id" placeholder="User ID (e.g. 15)"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-neon-blue focus:border-neon-blue">
+                        </div>
+
+                        <div id="email-input-container" class="hidden">
+                            <input type="email" name="email" placeholder="colleague@company.com"
+                                class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-neon-blue focus:border-neon-blue">
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <label class="text-sm text-gray-300">Role:</label>
                             <select name="role"
-                                class="bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                                class="bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm">
                                 <option value="member">Member</option>
                                 <option value="admin">Admin</option>
+                                <option value="owner">Owner (Transfer)</option>
                             </select>
                         </div>
                     </form>

@@ -2139,3 +2139,48 @@ html.dark .dark\:text-gray-400 {
 :fullscreen #code-editor {
   height: calc(100vh - 80px) !important;
 }
+
+/* Premium Editor & Focus Mode */
+.premium-editor {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-glass);
+}
+
+.focus-mode header,
+.focus-mode footer,
+.focus-mode .sidebar,
+.focus-mode .nav-bar,
+.focus-mode .snippet-sidebar,
+.focus-mode .snippet-header-info {
+  display: none !important;
+}
+
+.focus-mode main {
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+.focus-mode .editor-container {
+  height: 100vh !important;
+  border-radius: 0 !important;
+}
+
+.cm-minimap {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease;
+}
+
+.cm-minimap:hover {
+  opacity: 1 !important;
+}
+
+.markdown-preview {
+  background-color: var(--color-deep-space);
+  border-left: 1px solid var(--color-border);
+}
+
+.analysis-marker {
+  animation: fadeIn 0.3s ease-out;
+}

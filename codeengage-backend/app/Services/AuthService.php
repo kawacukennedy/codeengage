@@ -40,13 +40,39 @@ class AuthService
         return $this->login($data['email'], $data['password']);
     }
 
-    public function login($email, $password)
+    public function login($email, $password, $ipAddress = null, $userAgent = null)
     {
         $user = $this->userRepository->findByEmail($email);
         
-        if (!$user || !password_verify($password, $user->getPasswordHash())) {
+        if (!$user) {
             ApiResponse::error('Invalid credentials', 401);
         }
+
+        // Check Lockout
+        $lockoutUntil = $user->getLockoutUntil();
+        if ($lockoutUntil && strtotime($lockoutUntil) > time()) {
+            $minutes = ceil((strtotime($lockoutUntil) - time()) / 60);
+            ApiResponse::error("Account locked. Try again in $minutes minutes.", 403);
+        }
+        
+        if (!password_verify($password, $user->getPasswordHash())) {
+            // Increment attempts
+            $attempts = $user->getLoginAttempts() + 1;
+            $user->setLoginAttempts($attempts);
+            
+            if ($attempts >= 5) {
+                // Lock for 15 minutes
+                $user->setLockoutUntil(date('Y-m-d H:i:s', time() + 15 * 60));
+            }
+            $user->save();
+            
+            ApiResponse::error('Invalid credentials', 401);
+        }
+
+        // Reset attempts on success
+        $user->setLoginAttempts(0);
+        $user->setLockoutUntil(null);
+        $user->save();
 
         // JWT Payload
         $payload = [
@@ -61,7 +87,7 @@ class AuthService
         
         // Refresh Token
         $refreshToken = \App\Helpers\SecurityHelper::generateRandomString(64);
-        $this->storeRefreshToken($user->getId(), $refreshToken);
+        $sessionId = $this->storeRefreshToken($user->getId(), $refreshToken, $ipAddress, $userAgent);
 
         $userArray = $user->toArray();
         unset($userArray['password_hash']);
@@ -70,6 +96,7 @@ class AuthService
             'user' => $userArray,
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
+            'session_id' => $sessionId,
             'expires_in' => 3600
         ];
     }
@@ -115,12 +142,11 @@ class AuthService
         ];
     }
 
-    private function storeRefreshToken($userId, $token)
+    private function storeRefreshToken($userId, $token, $ipAddress = null, $userAgent = null)
     {
-        // Delete tokens older than 30 days for cleanup (optional optimization)
-        
-        $stmt = $this->pdo->prepare("INSERT INTO user_tokens (user_id, type, token, expires_at) VALUES (?, 'refresh', ?, DATE_ADD(NOW(), INTERVAL 30 DAY))");
-        $stmt->execute([$userId, $token]);
+        $stmt = $this->pdo->prepare("INSERT INTO user_tokens (user_id, type, token, expires_at, ip_address, user_agent) VALUES (?, 'refresh', ?, DATE_ADD(NOW(), INTERVAL 30 DAY), ?, ?)");
+        $stmt->execute([$userId, $token, $ipAddress, $userAgent]);
+        return (int)$this->pdo->lastInsertId();
     }
     
     private function revokeRefreshToken($token)
@@ -234,15 +260,23 @@ class AuthService
         return true;
     }
 
+    public function getActiveSessions($userId)
+    {
+        $stmt = $this->pdo->prepare("SELECT id, ip_address, user_agent, last_used_at, created_at FROM user_tokens WHERE user_id = ? AND type = 'refresh' AND (expires_at > NOW() OR expires_at IS NULL) ORDER BY last_used_at DESC");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function revokeSession($id, $userId)
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM user_tokens WHERE id = ? AND user_id = ?");
+        $stmt->execute([$id, $userId]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function me()
     {
-        // Handled by Middleware injecting user, but if called directly:
-        // We assume context is set or passed.
-        // For AuthController usage, it usually grabs user from request attributes set by Middleware.
-        // But here we can't easily get it without arguments.
-        // Let's rely on AuthController to pass the user or handle it.
-        // So this method might be redundant if the Controller handles `request->user`.
-        // We'll keep it simple: return null or throw.
+        // ... previous implementation ...
         return null; 
     }
 }

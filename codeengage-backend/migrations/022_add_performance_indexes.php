@@ -4,7 +4,7 @@ use App\Core\Database;
 
 class Migration_022_add_performance_indexes {
     public function up(PDO $pdo) {
-        $db = new Database(); // To get driver info if needed, or check existing indexes
+        // $db = new Database(); // Not needed
         
         // Add indexes to 'snippets' table
         $this->addIndex($pdo, 'snippets', 'idx_snippets_user_id', 'user_id');

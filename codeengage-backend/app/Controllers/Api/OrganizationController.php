@@ -67,8 +67,14 @@ class OrganizationController
                 ApiResponse::success($members);
             } elseif ($method === 'POST') {
                  $input = json_decode(file_get_contents('php://input'), true);
-                 $this->service->addMember($id, $user->getId(), $input['user_id'], $input['role'] ?? 'member');
-                 ApiResponse::success(null, 'Member added');
+                 // If updating existing member
+                 if (isset($input['update_role'])) {
+                     $this->service->updateMemberRole($id, $user->getId(), $input['user_id'], $input['role']);
+                     ApiResponse::success(null, 'Role updated');
+                 } else {
+                     $this->service->addMember($id, $user->getId(), $input['user_id'], $input['role'] ?? 'member');
+                     ApiResponse::success(null, 'Member added');
+                 }
             } elseif ($method === 'DELETE') {
                  $targetUserId = $_GET['user_id'] ?? null;
                  if (!$targetUserId) ApiResponse::error('Target user ID required', 400);
@@ -78,6 +84,41 @@ class OrganizationController
             }
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage(), 403);
+        }
+    }
+
+    public function invite($method, $params)
+    {
+        if ($method !== 'POST') ApiResponse::error('Method not allowed', 405);
+        $user = $this->auth->handle();
+        $id = $params[0] ?? null;
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (empty($input['email'])) ApiResponse::error('Email required', 400);
+
+        try {
+            $token = $this->service->inviteMember($id, $user->getId(), $input['email'], $input['role'] ?? 'member');
+            
+            // In a real app, send email here. For now return token.
+            ApiResponse::success(['token' => $token], 'Invitation created');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage(), 403);
+        }
+    }
+
+    public function accept($method, $params)
+    {
+        if ($method !== 'POST') ApiResponse::error('Method not allowed', 405);
+        $user = $this->auth->handle();
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (empty($input['token'])) ApiResponse::error('Token required', 400);
+
+        try {
+            $orgId = $this->service->acceptInvite($input['token'], $user->getId());
+            ApiResponse::success(['organization_id' => $orgId], 'Invitation accepted');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage(), 400);
         }
     }
     

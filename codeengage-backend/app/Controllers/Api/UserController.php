@@ -409,4 +409,56 @@ class UserController
             ApiResponse::error($e->getMessage(), 400);
         }
     }
+
+    public function sessions(string $method, array $params): void
+    {
+        if ($method !== 'GET') {
+            ApiResponse::error('Method not allowed', 405);
+        }
+
+        try {
+            $currentUser = $this->auth->handle();
+            
+            $config = require __DIR__ . '/../../../config/app.php';
+            $authService = new \App\Services\AuthService($this->db, $config);
+            
+            $sessions = $authService->getActiveSessions($currentUser->getId());
+            
+            ApiResponse::success($sessions);
+
+        } catch (\Exception $e) {
+            ApiResponse::error('Failed to fetch active sessions');
+        }
+    }
+
+    public function revokeSession(string $method, array $params): void
+    {
+        if ($method !== 'POST') {
+            ApiResponse::error('Method not allowed', 405);
+        }
+
+        try {
+            $currentUser = $this->auth->handle();
+            $input = json_decode(file_get_contents('php://input'), true);
+            $tokenId = $input['token_id'] ?? null;
+
+            if (!$tokenId) {
+                ApiResponse::error('Token ID required', 400);
+            }
+
+            $config = require __DIR__ . '/../../../config/app.php';
+            $authService = new \App\Services\AuthService($this->db, $config);
+            
+            $success = $authService->revokeSession($tokenId, $currentUser->getId());
+            
+            if ($success) {
+                ApiResponse::success(null, 'Session revoked');
+            } else {
+                ApiResponse::error('Session not found or already revoked', 404);
+            }
+
+        } catch (\Exception $e) {
+            ApiResponse::error('Failed to revoke session');
+        }
+    }
 }

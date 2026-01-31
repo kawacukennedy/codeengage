@@ -55,6 +55,14 @@ class OrganizationRepository
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function findBySlug(string $slug): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM organizations WHERE slug = ?");
+        $stmt->execute([$slug]);
+        $org = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $org ?: null;
+    }
     
     public function update(int $id, array $data): bool
     {
@@ -111,5 +119,40 @@ class OrganizationRepository
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         return $result ? $result['role'] : null;
+    }
+
+    public function updateMemberRole(int $orgId, int $userId, string $role): bool
+    {
+        $sql = "UPDATE organization_members SET role = ? WHERE organization_id = ? AND user_id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$role, $orgId, $userId]);
+    }
+
+    public function createInvite(array $data): bool
+    {
+        $sql = "INSERT INTO organization_invites (organization_id, email, token, role, inviter_id, expires_at) VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            $data['organization_id'],
+            $data['email'],
+            $data['token'],
+            $data['role'],
+            $data['inviter_id'],
+            $data['expires_at']
+        ]);
+    }
+
+    public function getInviteByToken(string $token): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM organization_invites WHERE token = ? AND accepted_at IS NULL AND expires_at > NOW()");
+        $stmt->execute([$token]);
+        $invite = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $invite ?: null;
+    }
+
+    public function markInviteAccepted(int $inviteId): bool
+    {
+        $stmt = $this->db->prepare("UPDATE organization_invites SET accepted_at = NOW() WHERE id = ?");
+        return $stmt->execute([$inviteId]);
     }
 }

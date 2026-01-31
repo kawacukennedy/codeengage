@@ -120,22 +120,19 @@ export default class SnippetEditor {
         // Initialize Collaborative Editor
         this.editor = new CollaborativeEditor(editorContainer, {
             value: this.data.snippet?.code || '',
-            mode: this.getLanguageMode(this.data.snippet?.language || 'javascript'),
+            language: this.data.snippet?.language || 'javascript',
             snippetId: this.snippetId,
             collaborate: this.data.isCollaborating,
-            theme: 'dracula', // Default
+            theme: localStorage.getItem('editor-theme') || 'dracula',
             lineNumbers: true,
-            foldGutter: true,
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-            matchBrackets: true,
             onSave: () => this.saveSnippet(),
             onRun: () => this.runAnalysis(),
+            onChange: () => {
+                this.hasUnsavedChanges = true;
+                this.updateSaveButton();
+            },
             onReady: (editorInstance) => {
-                // Track changes once editor is ready
-                editorInstance.editor.on('change', () => {
-                    this.hasUnsavedChanges = true;
-                    this.updateSaveButton();
-                });
+                this.updateCollaborationUI();
             }
         });
     }
@@ -461,7 +458,7 @@ export default class SnippetEditor {
 
     updateEditorLanguage(language) {
         if (this.editor) {
-            this.editor.setOption('mode', this.getLanguageMode(language));
+            this.editor.setOption('language', language);
         }
     }
 
