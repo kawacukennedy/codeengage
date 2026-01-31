@@ -3,6 +3,11 @@
 // Start latency tracking
 $startTime = microtime(true);
 
+// Generate or get request correlation ID
+$requestId = $_SERVER['HTTP_X_REQUEST_ID'] ?? uniqid('req_', true);
+$_SERVER['REQUEST_ID'] = $requestId;
+header('X-Request-ID: ' . $requestId);
+
 // API Entry Point for CodeEngage
 header_remove('X-Powered-By');
 
@@ -65,7 +70,8 @@ set_exception_handler(function($exception) {
         'message' => $exception->getMessage(),
         'duration_ms' => round($duration * 1000, 2),
         'file' => $exception->getFile(),
-        'line' => $exception->getLine()
+        'line' => $exception->getLine(),
+        'request_id' => $requestId
     ]);
 });
 
@@ -287,7 +293,8 @@ try {
         'path' => $path,
         'duration_ms' => round($duration * 1000, 2),
         'status' => http_response_code(),
-        'user_id' => $_SESSION['user_id'] ?? null
+        'user_id' => $_SESSION['user_id'] ?? null,
+        'request_id' => $requestId
     ]);
     
 } catch (App\Exceptions\ApiException $e) {
