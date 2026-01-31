@@ -8,6 +8,7 @@
 import { Router } from './modules/router.js';
 import { Auth } from './modules/auth.js';
 import { ApiClient } from './modules/api/client.js';
+import { AsyncErrorBoundary } from './modules/utils/async-error-boundary.js';
 import { Dashboard } from './pages/dashboard.js';
 import { Snippets } from './pages/snippets.js';
 import { Profile } from './pages/profile.js';
@@ -35,6 +36,13 @@ class App {
         this.shortcutManager = new ShortcutManager(this);
         this.visualizer = null; // Will be initialized when needed
         this.currentPage = null;
+
+        // Initialize error boundary for async operations
+        this.asyncErrorBoundary = new AsyncErrorBoundary({
+            onError: (error, context) => this.handleAsyncError(error, context),
+            maxRetries: 3,
+            timeout: 30000
+        });
 
         // Initialize modules
         this.init();
