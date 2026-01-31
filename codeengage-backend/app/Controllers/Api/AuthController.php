@@ -3,17 +3,20 @@
 namespace App\Controllers\Api;
 
 use App\Services\AuthService;
+use App\Services\SecurityEventService;
 use App\Helpers\ApiResponse;
 use PDO;
 
 class AuthController extends BaseController
 {
     private $authService;
+    private $securityService;
 
     public function __construct(PDO $pdo)
     {
         parent::__construct($pdo);
         $this->authService = new AuthService($pdo, $this->config);
+        $this->securityService = new SecurityEventService($pdo);
     }
 
     public function login($method, $params)
@@ -32,6 +35,22 @@ class AuthController extends BaseController
             $ipAddress = $this->getClientIp();
             $userAgent = $this->getUserAgent();
             
+            // Log login attempt
+            $this->securityService->logLoginAttempt($input['email'], $ipAddress, [
+                'method' => 'password',
+                'remember_me' => $input['remember_me'] ?? false
+            ]);
+            
+            // Analyze request for security threats
+            $securityRisks = $this->securityService->analyzeRequest();
+            if (!empty($securityRisks)) {
+                $this->handleException(new \Exception('Security threats detected'), [
+                    'error_type' => 'security_threat',
+                    'security_risks' => $securityRisks,
+                    'action' => 'user_login'
+                ], 400);
+            }
+            
             $result = $this->authService->login(
                 $input['email'], 
                 $input['password'],
@@ -39,9 +58,33 @@ class AuthController extends BaseController
                 $userAgent
             );
             
+            // Log successful login
+            if ($result['success']) {
+                $this->securityService->logLoginSuccess(
+                    $result['user']['id'], 
+                    $input['email'],
+                    [
+                        'method' => 'password',
+                        'remember_me' => $input['remember_me'] ?? false,
+                        'mfa_verified' => $result['mfa_verified'] ?? false
+                    ]
+                );
+            }
+            
             ApiResponse::success($result, 'Login successful');
 
         } catch (\Exception $e) {
+            // Log failed login attempt
+            $input = $this->getJsonInput();
+            $this->securityService->logLoginFailure(
+                $input['email'] ?? '',
+                $e->getMessage(),
+                [
+                    'method' => 'password',
+                    'endpoint' => '/api/auth/login'
+                ]
+            );
+            
             $this->handleException($e, [
                 'error_type' => 'login_failed',
                 'action' => 'user_login',
