@@ -6,16 +6,15 @@ use App\Services\SnippetService;
 use App\Helpers\ApiResponse;
 use PDO;
 
-class SnippetController
+class SnippetController extends BaseController
 {
     private $snippetService;
     private $searchService;
     private $gamificationService;
-    private $pdo;
 
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo);
         $this->snippetService = new SnippetService($pdo);
         
         // Manual DI for SearchService
@@ -44,9 +43,64 @@ class SnippetController
 
     public function analyze($method, $params)
     {
-        if ($method !== 'POST') {
-            ApiResponse::error('Method not allowed', 405);
+        $this->requirePost($method);
+        $this->setResponseHeaders();
+
+        try {
+            $id = $params[0] ?? null;
+            if (!$id) {
+                $this->handleException(new \Exception('Snippet ID required'), [
+                    'error_type' => 'missing_parameter',
+                    'parameter' => 'id',
+                    'action' => 'snippet_analysis'
+                ], 400);
+            }
+
+            $this->validateInput(['id' => $id], [
+                'id' => ['required', 'integer']
+            ]);
+
+            // Visibility/Auth check
+            $snippet = $this->snippetService->getById($id);
+            if (!$snippet) {
+                $this->handleException(new \Exception('Snippet not found'), [
+                    'error_type' => 'resource_not_found',
+                    'snippet_id' => $id,
+                    'action' => 'snippet_analysis'
+                ], 404);
+            }
+
+            if ($snippet['visibility'] !== 'public') {
+                $userId = $this->requireAuth();
+                
+                if ($snippet['author_id'] !== $userId) {
+                    $this->handleException(new \Exception('Access denied'), [
+                        'error_type' => 'permission_denied',
+                        'snippet_id' => $id,
+                        'author_id' => $snippet['author_id'],
+                        'user_id' => $userId,
+                        'action' => 'snippet_analysis'
+                    ], 403);
+                }
+            }
+            
+            $result = $this->snippetService->analyzeSaved($id);
+            
+            // Trigger gamification
+            if (isset($_SESSION['user_id'])) {
+                 $this->triggerGamification($_SESSION['user_id'], 'snippet.analyze');
+            }
+            
+            ApiResponse::success($result, 'Analysis complete');
+
+        } catch (\Exception $e) {
+            $this->handleException($e, [
+                'error_type' => 'analysis_failed',
+                'snippet_id' => $params[0] ?? null,
+                'action' => 'snippet_analysis'
+            ], 500);
         }
+    }
 
         $id = $params[0] ?? null;
         if (!$id) {
