@@ -193,7 +193,7 @@ export class ApiClient {
     }
 
     /**
-     * Make HTTP request with circuit breaker and retry mechanism
+     * Make an HTTP request with circuit breaker and retry mechanism
      * @param {string} method - HTTP method
      * @param {string} endpoint - API endpoint
      * @param {object} data - Request data
@@ -201,15 +201,39 @@ export class ApiClient {
      * @returns {Promise} Response promise
      */
     async request(method, endpoint, data = null, options = {}) {
+        const startTime = Date.now();
+        const requestId = this.generateRequestId();
+        
+        // Add request ID to headers
+        const enhancedOptions = {
+            ...options,
+            headers: {
+                ...options.headers,
+                'X-Request-ID': requestId
+            }
+        };
+        
         const useCircuitBreaker = options.circuitBreaker !== false;
         
-        if (useCircuitBreaker) {
-            return this.circuitBreaker.execute(async () => {
-                return this.requestWithRetry(method, endpoint, data, options);
-            });
-        } else {
-            return this.requestWithRetry(method, endpoint, data, options);
+        try {
+            const result = useCircuitBreaker ? 
+                await this.circuitBreaker.execute(async () => {
+                    return this.requestWithRetry(method, endpoint, data, enhancedOptions);
+                }) :
+                await this.requestWithRetry(method, endpoint, data, enhancedOptions);
+
+            // Log successful request
+            this.logRequest(method, endpoint, startTime, requestId, null, result);
+            
+            return result;
+            
+        } catch (error) {
+            // Log failed request
+            this.logRequest(method, endpoint, startTime, requestId, error, null);
+            
+            throw error;
         }
+    }
     }
     }
 
@@ -421,6 +445,75 @@ export class ApiClient {
             ...config
         });
         this.circuitBreaker = newCircuitBreaker;
+    }
+
+    /**
+     * Generate unique request ID
+     * @returns {string} Request ID
+     */
+    generateRequestId() {
+        return 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    /**
+     * Log request for debugging
+     * @param {string} method - HTTP method
+     * @param {string} endpoint - API endpoint
+     * @param {number} startTime - Request start time
+     * @param {string} requestId - Request ID
+     * @param {Error} error - Error if any
+     * @param {object} response - Response if successful
+     */
+    logRequest(method, endpoint, startTime, requestId, error = null, response = null) {
+        const duration = Date.now() - startTime;
+        const logData = {
+            method,
+            endpoint,
+            requestId,
+            duration,
+            timestamp: new Date().toISOString(),
+            success: !error,
+            error: error ? {
+                message: error.message,
+                status: error.status,
+                name: error.name
+            } : null,
+            response: response ? {
+                status: response.status,
+                size: JSON.stringify(response).length
+            } : null
+        };
+
+        // Log to console in development
+        if (process.env.NODE_ENV === 'development') {
+            console.log('API Request:', logData);
+        }
+
+        // Store in localStorage for debugging
+        const logs = JSON.parse(localStorage.getItem('api_logs') || '[]');
+        logs.push(logData);
+        
+        // Keep only last 100 logs
+        if (logs.length > 100) {
+            logs.splice(0, logs.length - 100);
+        }
+        
+        localStorage.setItem('api_logs', JSON.stringify(logs));
+    }
+
+    /**
+     * Get API request logs
+     * @returns {Array} Array of request logs
+     */
+    getRequestLogs() {
+        return JSON.parse(localStorage.getItem('api_logs') || '[]');
+    }
+
+    /**
+     * Clear API request logs
+     */
+    clearRequestLogs() {
+        localStorage.removeItem('api_logs');
     }
 
     /**
