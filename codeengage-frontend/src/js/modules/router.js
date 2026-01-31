@@ -10,12 +10,20 @@ export class Router {
         this.routes = [];
         this.currentRoute = null;
         this.params = {};
+        this.routeMetrics = new Map(); // Track route performance and errors
 
         // Handle back/forward buttons
         window.addEventListener('popstate', () => this.handleRouteChange());
 
         // Handle link clicks
         document.addEventListener('click', (e) => this.handleLinkClick(e));
+
+        // Handle unhandled route errors
+        window.addEventListener('error', (e) => {
+            if (e.error && e.error.context?.type === 'route_error') {
+                this.handleRouteError(e.error, e.error.context);
+            }
+        });
     }
 
     /**
