@@ -28,8 +28,57 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 
-    <!-- Tailwind CSS (CDN for Development/Preview to support all utility classes) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS (Production Build - Using local build instead of CDN) -->
+    <script>
+        // Production Tailwind configuration (no CDN needed in production)
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            // In production, use the compiled CSS from main.css
+            // No CDN needed as it's already compiled
+        } else {
+            // Only load CDN in development
+            const script = document.createElement('script');
+            script.src = 'https://cdn.tailwindcss.com';
+            script.onload = function() {
+                tailwind.config = {
+                    darkMode: 'class',
+                    theme: {
+                        extend: {
+                            fontFamily: {
+                                'sans': ['Inter Variable', 'Inter', 'ui-sans-serif', 'system-ui'],
+                                'mono': ['JetBrains Mono Variable', 'JetBrains Mono', 'Fira Mono', 'monospace'],
+                                'display': ['Plus Jakarta Sans', 'Inter', 'system-ui']
+                            },
+                            colors: {
+                                'deep-space': '#0B0F19',
+                                'neon-blue': '#00F0FF',
+                                'neon-purple': '#7000FF',
+                                'glass-surface': 'rgba(31, 41, 55, 0.5)',
+                            },
+                            backgroundImage: {
+                                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                            },
+                            animation: {
+                                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                                'fade-in': 'fadeIn 0.5s ease-out',
+                                'slide-up': 'slideUp 0.5s ease-out',
+                            },
+                            keyframes: {
+                                fadeIn: {
+                                    '0%': { opacity: '0' },
+                                    '100%': { opacity: '1' },
+                                },
+                                slideUp: {
+                                    '0%': { transform: 'translateY(10px)', opacity: '0' },
+                                    '100%': { transform: 'translateY(0)', opacity: '1' },
+                                }
+                            }
+                        }
+                    }
+                };
+            };
+            document.head.appendChild(script);
+        }
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',

@@ -234,8 +234,6 @@ export class ApiClient {
             throw error;
         }
     }
-    }
-    }
 
     /**
      * Make a single HTTP request (no retry)
