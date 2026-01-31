@@ -4,6 +4,133 @@
  * Provides a unified interface for making HTTP requests to the backend API.
  */
 
+/**
+ * Circuit Breaker Pattern Implementation
+ */
+class CircuitBreaker {
+    constructor(options = {}) {
+        this.failureThreshold = options.failureThreshold || 5;
+        this.timeout = options.timeout || 60000;
+        this.monitoringPeriod = options.monitoringPeriod || 30000;
+        
+        this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
+        this.failureCount = 0;
+        this.lastFailureTime = null;
+        this.successCount = 0;
+        this.requestCount = 0;
+        this.lastResetTime = Date.now();
+    }
+
+    /**
+     * Execute a function through the circuit breaker
+     * @param {Function} fn - Function to execute
+     * @returns {Promise} Result of the function
+     */
+    async execute(fn) {
+        this.resetIfMonitoringPeriodExpired();
+
+        if (this.state === 'OPEN') {
+            if (this.shouldAttemptReset()) {
+                this.state = 'HALF_OPEN';
+                this.successCount = 0;
+            } else {
+                throw new CircuitBreakerError('Circuit breaker is OPEN');
+            }
+        }
+
+        this.requestCount++;
+        
+        try {
+            const result = await fn();
+            this.onSuccess();
+            return result;
+        } catch (error) {
+            this.onFailure();
+            throw error;
+        }
+    }
+
+    /**
+     * Handle successful request
+     */
+    onSuccess() {
+        if (this.state === 'HALF_OPEN') {
+            this.successCount++;
+            if (this.successCount >= 1) {
+                this.reset();
+            }
+        } else {
+            this.failureCount = 0;
+        }
+    }
+
+    /**
+     * Handle failed request
+     */
+    onFailure() {
+        this.failureCount++;
+        this.lastFailureTime = Date.now();
+
+        if (this.failureCount >= this.failureThreshold) {
+            this.state = 'OPEN';
+        }
+    }
+
+    /**
+     * Reset circuit breaker to closed state
+     */
+    reset() {
+        this.state = 'CLOSED';
+        this.failureCount = 0;
+        this.successCount = 0;
+        this.lastFailureTime = null;
+        this.lastResetTime = Date.now();
+    }
+
+    /**
+     * Check if monitoring period has expired and reset if needed
+     */
+    resetIfMonitoringPeriodExpired() {
+        if (Date.now() - this.lastResetTime > this.monitoringPeriod) {
+            this.reset();
+        }
+    }
+
+    /**
+     * Check if we should attempt to reset the circuit breaker
+     * @returns {boolean} Whether to attempt reset
+     */
+    shouldAttemptReset() {
+        return this.lastFailureTime && (Date.now() - this.lastFailureTime) > this.timeout;
+    }
+
+    /**
+     * Get circuit breaker status
+     * @returns {object} Current status
+     */
+    getStatus() {
+        return {
+            state: this.state,
+            failureCount: this.failureCount,
+            successCount: this.successCount,
+            requestCount: this.requestCount,
+            failureThreshold: this.failureThreshold,
+            lastFailureTime: this.lastFailureTime,
+            lastResetTime: this.lastResetTime
+        };
+    }
+}
+
+/**
+ * Custom error for circuit breaker
+ */
+class CircuitBreakerError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'CircuitBreakerError';
+    }
+}
+
 export class ApiClient {
     /**
      * Create a new API client instance
@@ -21,6 +148,20 @@ export class ApiClient {
             request: [],
             response: []
         };
+        this.retryConfig = {
+            maxRetries: options.maxRetries || 3,
+            retryDelay: options.retryDelay || 1000,
+            retryBackoffFactor: options.retryBackoffFactor || 2,
+            retryableStatusCodes: [408, 429, 500, 502, 503, 504],
+            retryableErrors: ['NetworkError', 'AbortError', 'TypeError']
+        };
+        
+        // Circuit breaker configuration
+        this.circuitBreaker = new CircuitBreaker({
+            failureThreshold: options.circuitBreakerFailureThreshold || 5,
+            timeout: options.circuitBreakerTimeout || 60000,
+            monitoringPeriod: options.circuitBreakerMonitoringPeriod || 30000
+        });
     }
 
     /**
@@ -52,7 +193,7 @@ export class ApiClient {
     }
 
     /**
-     * Make an HTTP request
+     * Make HTTP request with circuit breaker and retry mechanism
      * @param {string} method - HTTP method
      * @param {string} endpoint - API endpoint
      * @param {object} data - Request data
@@ -60,6 +201,27 @@ export class ApiClient {
      * @returns {Promise} Response promise
      */
     async request(method, endpoint, data = null, options = {}) {
+        const useCircuitBreaker = options.circuitBreaker !== false;
+        
+        if (useCircuitBreaker) {
+            return this.circuitBreaker.execute(async () => {
+                return this.requestWithRetry(method, endpoint, data, options);
+            });
+        } else {
+            return this.requestWithRetry(method, endpoint, data, options);
+        }
+    }
+    }
+
+    /**
+     * Make a single HTTP request (no retry)
+     * @param {string} method - HTTP method
+     * @param {string} endpoint - API endpoint
+     * @param {object} data - Request data
+     * @param {object} options - Additional options
+     * @returns {Promise} Response promise
+     */
+    async requestOnce(method, endpoint, data = null, options = {}) {
         const url = this.buildUrl(endpoint);
 
         let config = {
@@ -127,6 +289,138 @@ export class ApiClient {
             }
             throw error;
         }
+    }
+
+    /**
+     * Make HTTP request with retry mechanism
+     * @param {string} method - HTTP method
+     * @param {string} endpoint - API endpoint
+     * @param {object} data - Request data
+     * @param {object} options - Additional options
+     * @param {number} remainingRetries - Number of retries remaining
+     * @returns {Promise} Response promise
+     */
+    async requestWithRetry(method, endpoint, data = null, options = {}, remainingRetries) {
+        try {
+            return await this.requestOnce(method, endpoint, data, options);
+        } catch (error) {
+            // Check if error is retryable
+            if (this.isRetryableError(error) && remainingRetries > 0) {
+                const delay = this.calculateRetryDelay(options.retryAttempt || 1);
+                
+                console.warn(`Request failed, retrying in ${delay}ms... (${remainingRetries} retries left)`, {
+                    method,
+                    endpoint,
+                    error: error.message,
+                    attempt: (options.retryAttempt || 1)
+                });
+
+                // Wait before retry
+                await this.delay(delay);
+
+                // Retry with incremented attempt counter
+                return this.requestWithRetry(method, endpoint, data, {
+                    ...options,
+                    retryAttempt: (options.retryAttempt || 1) + 1
+                }, remainingRetries - 1);
+            }
+
+            // No more retries or non-retryable error
+            throw error;
+        }
+    }
+
+    /**
+     * Check if an error is retryable
+     * @param {Error} error - The error to check
+     * @returns {boolean} Whether the error is retryable
+     */
+    isRetryableError(error) {
+        // Check status code based retries
+        if (error.status && this.retryConfig.retryableStatusCodes.includes(error.status)) {
+            return true;
+        }
+
+        // Check error name based retries
+        if (this.retryConfig.retryableErrors.includes(error.name)) {
+            return true;
+        }
+
+        // Check network errors
+        if (error.message && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch')
+        )) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Calculate retry delay with exponential backoff
+     * @param {number} attempt - Current attempt number (1-based)
+     * @returns {number} Delay in milliseconds
+     */
+    calculateRetryDelay(attempt) {
+        const baseDelay = this.retryConfig.retryDelay;
+        const backoffFactor = this.retryConfig.retryBackoffFactor;
+        
+        // Exponential backoff with jitter
+        const exponentialDelay = baseDelay * Math.pow(backoffFactor, attempt - 1);
+        
+        // Add random jitter to avoid thundering herd
+        const jitter = exponentialDelay * 0.1 * Math.random();
+        
+        // Cap at maximum delay (30 seconds)
+        const maxDelay = 30000;
+        
+        return Math.min(exponentialDelay + jitter, maxDelay);
+    }
+
+    /**
+     * Utility function to delay execution
+     * @param {number} ms - Delay in milliseconds
+     * @returns {Promise} Promise that resolves after delay
+     */
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Configure retry settings
+     * @param {object} config - Retry configuration
+     */
+    configureRetry(config) {
+        this.retryConfig = { ...this.retryConfig, ...config };
+    }
+
+    /**
+     * Get circuit breaker status
+     * @returns {object} Circuit breaker status
+     */
+    getCircuitBreakerStatus() {
+        return this.circuitBreaker.getStatus();
+    }
+
+    /**
+     * Reset circuit breaker manually
+     */
+    resetCircuitBreaker() {
+        this.circuitBreaker.reset();
+    }
+
+    /**
+     * Configure circuit breaker
+     * @param {object} config - Circuit breaker configuration
+     */
+    configureCircuitBreaker(config) {
+        const newCircuitBreaker = new CircuitBreaker({
+            ...this.circuitBreaker,
+            ...config
+        });
+        this.circuitBreaker = newCircuitBreaker;
     }
 
     /**
