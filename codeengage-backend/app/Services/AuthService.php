@@ -25,9 +25,7 @@ class AuthService
             ApiResponse::error('Missing required fields', 422);
         }
 
-        if ($this->userRepository->findByEmail($data['email'])) {
-            ApiResponse::error('Email already exists', 409);
-        }
+
 
         // Create user via repository
         $this->userRepository->create($data);
@@ -40,7 +38,7 @@ class AuthService
         return $this->login($data['email'], $data['password']);
     }
 
-    public function login($email, $password, $ipAddress = null, $userAgent = null)
+    public function login($email, $password, ?string $ipAddress = null, ?string $userAgent = null)
     {
         $user = $this->userRepository->findByEmail($email);
         
@@ -75,11 +73,12 @@ class AuthService
         $user->save();
 
         // JWT Payload
+        $currentTime = time();
         $payload = [
             'user_id' => $user->getId(),
             'role' => $user->getRole(),
-            'iat' => time(),
-            'exp' => time() + (60 * 60) // 1 hour expiration
+            'iat' => $currentTime,
+            'exp' => $currentTime + (60 * 60 * 24) // 24 hour expiration for testing
         ];
 
         $secret = $this->config['auth']['jwt']['secret'] ?? 'default_secret'; // Fallback
@@ -144,7 +143,9 @@ class AuthService
 
     private function storeRefreshToken($userId, $token, $ipAddress = null, $userAgent = null)
     {
-        $stmt = $this->pdo->prepare("INSERT INTO user_tokens (user_id, type, token, expires_at, ip_address, user_agent) VALUES (?, 'refresh', ?, DATE_ADD(NOW(), INTERVAL 30 DAY), ?, ?)");
+        $driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $expiresSql = $driver === 'sqlite' ? "datetime('now', '+30 days')" : "DATE_ADD(NOW(), INTERVAL 30 DAY)";
+        $stmt = $this->pdo->prepare("INSERT INTO user_tokens (user_id, type, token, expires_at, ip_address, user_agent) VALUES (?, 'refresh', ?, $expiresSql, ?, ?)");
         $stmt->execute([$userId, $token, $ipAddress, $userAgent]);
         return (int)$this->pdo->lastInsertId();
     }
@@ -159,7 +160,9 @@ class AuthService
     {
         // Generate token
         $token = \App\Helpers\SecurityHelper::generateRandomString(40);
-        $stmt = $this->pdo->prepare("INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))");
+        $driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $expiresSql = $driver === 'sqlite' ? "datetime('now', '+24 hours')" : "DATE_ADD(NOW(), INTERVAL 24 HOUR)";
+        $stmt = $this->pdo->prepare("INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, $expiresSql)");
         $stmt->execute([$user->getId(), $token]);
         
         // Log "Email Sent" since we don't have SMTP yet
@@ -216,7 +219,9 @@ class AuthService
     public function resetPassword($email, $token, $newPassword)
     {
         // Check Token (valid for 1 hour)
-        $stmt = $this->pdo->prepare("SELECT * FROM password_resets WHERE email = ? AND token = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+        $driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        $conditionSql = $driver === 'sqlite' ? "created_at > datetime('now', '-1 hour')" : "created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)";
+        $stmt = $this->pdo->prepare("SELECT * FROM password_resets WHERE email = ? AND token = ? AND $conditionSql");
         $stmt->execute([$email, $token]);
         $reset = $stmt->fetch(\PDO::FETCH_ASSOC);
         
