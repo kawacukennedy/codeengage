@@ -107,7 +107,14 @@ class AuthController extends BaseController
             $this->requireFields($input, ['email', 'password', 'username']);
             $this->validateInput($input, [
                 'email' => ['required', 'email'],
-                'password' => ['required', ['min' => 8]],
+                'password' => [
+                    'required', 
+                    ['min' => 8],
+                    ['regex' => '/[A-Z]/', 'message' => 'Password must contain at least one uppercase letter'],
+                    ['regex' => '/[a-z]/', 'message' => 'Password must contain at least one lowercase letter'],
+                    ['regex' => '/[0-9]/', 'message' => 'Password must contain at least one number'],
+                    ['regex' => '/[^A-Za-z0-9]/', 'message' => 'Password must contain at least one special character']
+                ],
                 'username' => ['required', ['min' => 3], ['max' => 50]],
                 'display_name' => [['max' => 100]]
             ]);
@@ -197,29 +204,29 @@ class AuthController extends BaseController
 
             if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
                 $token = $matches[1];
-                // Temporarily bypass JWT validation for testing
-                $payload = ['user_id' => 3, 'role' => 'member', 'exp' => time() + 3600];
-                
-                /*
-                $secret = $this->config['auth']['jwt_secret'] ?? $this->config['auth']['jwt']['secret'] ?? 'default_secret';
-                
-                if ($secret === 'default_secret') {
-                    ApiResponse::error('JWT secret not configured', 500);
-                }
+                $secret = $this->config['auth']['jwt']['secret'] ?? $_ENV['JWT_SECRET'] ?? 'default-secret-change-in-production';
                 
                 $payload = \App\Helpers\SecurityHelper::validateJwtToken($token, $secret);
-                */
                 
                 if ($payload && isset($payload['user_id'])) {
-                    // For now, return basic payload info
-                    // TODO: Get full user profile from database
-                    ApiResponse::success([
-                        'user_id' => $payload['user_id'], 
-                        'username' => $payload['username'] ?? null,
-                        'role' => $payload['role'] ?? 'user',
-                        'email_verified' => $payload['email_verified'] ?? false
-                    ], 'User profile');
-                    return;
+                    $userRepo = new \App\Repositories\UserRepository($this->db);
+                    $user = $userRepo->findById($payload['user_id']);
+                    
+                    if ($user) {
+                        ApiResponse::success([
+                            'id' => $user->getId(),
+                            'username' => $user->getUsername(),
+                            'email' => $user->getEmail(),
+                            'display_name' => $user->getDisplayName(),
+                            'avatar_url' => $user->getAvatarUrl(),
+                            'bio' => $user->getBio(),
+                            'preferences' => $user->getPreferences(),
+                            'achievement_points' => $user->getAchievementPoints(),
+                            'role' => $user->getRole(),
+                            'email_verified' => (bool)$user->getEmailVerifiedAt()
+                        ], 'User profile');
+                        return;
+                    }
                 }
             }
             

@@ -16,7 +16,7 @@ trap cleanup SIGINT
 
 # Start Backend
 echo "Starting Backend on http://localhost:8000..."
-/usr/local/bin/php -S localhost:8000 -t codeengage-backend/public &
+/usr/local/bin/php -S 127.0.0.1:8000 -t codeengage-backend/public > codeengage-backend/backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to be ready
