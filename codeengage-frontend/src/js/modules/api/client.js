@@ -12,7 +12,7 @@ class CircuitBreaker {
         this.failureThreshold = options.failureThreshold || 5;
         this.timeout = options.timeout || 60000;
         this.monitoringPeriod = options.monitoringPeriod || 30000;
-        
+
         this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
         this.failureCount = 0;
         this.lastFailureTime = null;
@@ -39,7 +39,7 @@ class CircuitBreaker {
         }
 
         this.requestCount++;
-        
+
         try {
             const result = await fn();
             this.onSuccess();
@@ -137,7 +137,9 @@ export class ApiClient {
      * @param {object} options - Configuration options
      */
     constructor(options = {}) {
-        this.baseUrl = options.baseUrl || 'http://localhost:8000/api';
+        // Use absolute URL for backend if running locally and relative path is used
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        this.baseUrl = options.baseUrl || (isLocal ? 'http://127.0.0.1:8000/api' : '/api');
         this.timeout = options.timeout || 30000;
         this.headers = {
             'Content-Type': 'application/json',
@@ -155,7 +157,7 @@ export class ApiClient {
             retryableStatusCodes: [408, 429, 500, 502, 503, 504],
             retryableErrors: ['NetworkError', 'AbortError', 'TypeError']
         };
-        
+
         // Circuit breaker configuration
         this.circuitBreaker = new CircuitBreaker({
             failureThreshold: options.circuitBreakerFailureThreshold || 5,
@@ -203,7 +205,7 @@ export class ApiClient {
     async request(method, endpoint, data = null, options = {}) {
         const startTime = Date.now();
         const requestId = this.generateRequestId();
-        
+
         // Add request ID to headers
         const enhancedOptions = {
             ...options,
@@ -212,11 +214,11 @@ export class ApiClient {
                 'X-Request-ID': requestId
             }
         };
-        
+
         const useCircuitBreaker = options.circuitBreaker !== false;
-        
+
         try {
-            const result = useCircuitBreaker ? 
+            const result = useCircuitBreaker ?
                 await this.circuitBreaker.execute(async () => {
                     return this.requestWithRetry(method, endpoint, data, enhancedOptions);
                 }) :
@@ -224,13 +226,13 @@ export class ApiClient {
 
             // Log successful request
             this.logRequest(method, endpoint, startTime, requestId, null, result);
-            
+
             return result;
-            
+
         } catch (error) {
             // Log failed request
             this.logRequest(method, endpoint, startTime, requestId, error, null);
-            
+
             throw error;
         }
     }
@@ -275,6 +277,16 @@ export class ApiClient {
             const response = await fetch(url, config);
             clearTimeout(timeoutId);
 
+            // Handle successful response and update cache for GET requests
+            if (response.ok && method === 'GET' && !options.skipCache) {
+                const responseClone = response.clone();
+                responseClone.json().then(data => {
+                    if (window.app.offlineManager) {
+                        window.app.offlineManager.cacheData(endpoint, data);
+                    }
+                }).catch(() => { });
+            }
+
             let result = {
                 ok: response.ok,
                 status: response.status,
@@ -309,6 +321,46 @@ export class ApiClient {
             if (error.name === 'AbortError') {
                 throw new ApiError('Request timeout', 408);
             }
+
+            // Handle Network Errors / Offline Mode
+            if (!navigator.onLine || error.name === 'TypeError' || error.message.includes('fetch')) {
+                console.warn('Network issue detected, trying offline handlers...');
+
+                // For GET requests, try to serve from cache
+                if (method === 'GET' && window.app.offlineManager) {
+                    const cachedData = await window.app.offlineManager.getCachedData(endpoint);
+                    if (cachedData) {
+                        console.info('Serving data from offline cache');
+                        return cachedData;
+                    }
+                }
+
+                // For mutations (POST, PUT, DELETE), add to sync queue if not already a sync attempt
+                if (['POST', 'PUT', 'DELETE'].includes(method) &&
+                    window.app.offlineManager &&
+                    !options.isSyncAttempt) {
+
+                    console.info('Queueing mutation for background sync');
+
+                    let action = '';
+                    if (endpoint.includes('/snippets')) {
+                        if (method === 'POST') action = 'create_snippet';
+                        if (method === 'PUT') action = 'update_snippet';
+                        if (method === 'DELETE') action = 'delete_snippet';
+                    }
+
+                    if (action) {
+                        await window.app.offlineManager.addToSyncQueue(action, data);
+                        // Return a "pending" response
+                        return {
+                            success: true,
+                            message: 'Request queued for offline sync',
+                            _queued: true
+                        };
+                    }
+                }
+            }
+
             throw error;
         }
     }
@@ -329,7 +381,7 @@ export class ApiClient {
             // Check if error is retryable
             if (this.isRetryableError(error) && remainingRetries > 0) {
                 const delay = this.calculateRetryDelay(options.retryAttempt || 1);
-                
+
                 console.warn(`Request failed, retrying in ${delay}ms... (${remainingRetries} retries left)`, {
                     method,
                     endpoint,
@@ -388,16 +440,16 @@ export class ApiClient {
     calculateRetryDelay(attempt) {
         const baseDelay = this.retryConfig.retryDelay;
         const backoffFactor = this.retryConfig.retryBackoffFactor;
-        
+
         // Exponential backoff with jitter
         const exponentialDelay = baseDelay * Math.pow(backoffFactor, attempt - 1);
-        
+
         // Add random jitter to avoid thundering herd
         const jitter = exponentialDelay * 0.1 * Math.random();
-        
+
         // Cap at maximum delay (30 seconds)
         const maxDelay = 30000;
-        
+
         return Math.min(exponentialDelay + jitter, maxDelay);
     }
 
@@ -482,8 +534,15 @@ export class ApiClient {
             } : null
         };
 
-        // Log to console in development
-        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        // Log request for debugging
+        if (error) {
+            console.group('%c🚨 API Error', 'background: red; color: white; padding: 2px 5px; border-radius: 2px; font-weight: bold;');
+            console.error('Method:', method);
+            console.error('Endpoint:', endpoint);
+            console.error('Error:', error);
+            console.error('Response:', response);
+            console.groupEnd();
+        } else if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
             console.log('API Request:', logData);
         }
 
@@ -491,12 +550,12 @@ export class ApiClient {
         try {
             const logs = JSON.parse(localStorage.getItem('api_logs') || '[]');
             logs.push(logData);
-            
+
             // Keep only last 100 logs
             if (logs.length > 100) {
                 logs.splice(0, logs.length - 100);
             }
-            
+
             localStorage.setItem('api_logs', JSON.stringify(logs));
         } catch (e) {
             console.warn('Failed to store API logs:', e.message);
