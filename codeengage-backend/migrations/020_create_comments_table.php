@@ -30,5 +30,13 @@ return function(PDO $pdo) {
     }
     
     // Add index for comments
-    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_comments_snippet ON comments(snippet_id, created_at DESC)");
+    try {
+        if ($driver === 'sqlite') {
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_comments_snippet ON comments(snippet_id, created_at DESC)");
+        } else {
+             $pdo->exec("CREATE INDEX idx_comments_snippet ON comments(snippet_id, created_at DESC)");
+        }
+    } catch (PDOException $e) {
+        // Index might already exist
+    }
 };

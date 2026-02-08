@@ -31,5 +31,13 @@ return function(PDO $pdo) {
     }
 
     // Add index for api_keys
-    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)");
+    try {
+        if ($driver === 'sqlite') {
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)");
+        } else {
+            $pdo->exec("CREATE INDEX idx_api_keys_user ON api_keys(user_id)");
+        }
+    } catch (PDOException $e) {
+        // Index might already exist
+    }
 };

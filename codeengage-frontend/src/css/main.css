@@ -7337,3 +7337,62 @@ html.dark .dark\:text-gray-400 {
     padding-right: 2rem;
   }
 }
+/* Code Analysis Styles */
+.cm-analysis-issue {
+    position: relative;
+    border-bottom: 2px wavy;
+}
+
+.cm-issue-security {
+    border-bottom-color: #f87171; /* red-400 */
+    background-color: rgba(248, 113, 113, 0.1);
+}
+
+.cm-issue-performance {
+    border-bottom-color: #fbbf24; /* yellow-400 */
+    background-color: rgba(251, 191, 36, 0.1);
+}
+
+.cm-issue-complexity {
+    border-bottom-color: #60a5fa; /* blue-400 */
+    background-color: rgba(96, 165, 250, 0.1);
+}
+
+.cm-issue-warning {
+    border-bottom-color: #fb923c; /* orange-400 */
+    background-color: rgba(251, 146, 60, 0.1);
+}
+
+.cm-analysis-gutter {
+    width: 12px;
+}
+
+.cm-gutter-issue {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    height: 100%;
+}
+
+.cm-gutter-issue.cm-issue-security {
+    color: #ef4444;
+}
+
+.cm-gutter-issue.cm-issue-performance {
+    color: #f59e0b;
+}
+
+.cm-gutter-issue.cm-issue-complexity {
+    color: #3b82f6;
+}
+
+.cm-gutter-issue.cm-issue-warning {
+    color: #f97316;
+}
+
+/* Minimap Issue Colors */
+.cm-bg-issue-security { background-color: #ef4444; }
+.cm-bg-issue-performance { background-color: #f59e0b; }
+.cm-bg-issue-complexity { background-color: #3b82f6; }
+.cm-bg-issue-warning { background-color: #f97316; }
