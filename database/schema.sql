@@ -262,7 +262,22 @@ CREATE TABLE user_followers (
     PRIMARY KEY (follower_id, following_id)
 );
 
+-- System Backups (Compliance)
+CREATE TABLE system_backups (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    backup_name varchar(255) NOT NULL,
+    backup_type varchar(50) DEFAULT 'full' CHECK (backup_type IN ('full', 'incremental', 'config')),
+    storage_provider varchar(50) DEFAULT 'supabase_storage',
+    file_path text NOT NULL,
+    file_size_bytes bigint,
+    checksum varchar(64),
+    status varchar(20) DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
+    created_at timestamptz DEFAULT NOW(),
+    completed_at timestamptz
+);
+
 -- Advanced Search Indexes
 CREATE INDEX idx_snippets_full_text ON snippets USING GIN (to_tsvector('english', title || ' ' || description));
 CREATE INDEX idx_snippets_denormalized_stats ON snippets (star_count DESC, view_count DESC, created_at DESC);
 CREATE INDEX idx_users_social_streak ON users (coding_streak DESC, last_active_at DESC);
+CREATE INDEX idx_system_backups_created_at ON system_backups(created_at DESC);

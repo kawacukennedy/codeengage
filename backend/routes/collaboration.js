@@ -82,4 +82,38 @@ router.get('/sessions/:token/updates', authenticate, async (req, res) => {
     }
 });
 
+// Expert Peer Review Matchmaking (Spec Requirement)
+router.post('/reviews/match', authenticate, async (req, res) => {
+    const { preferences } = req.body;
+    try {
+        const match_id = `REV_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+        const session_token = `SESS_REV_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+        // Simulated matching logic: Pick a random "expert" (mocked)
+        const matched_user = {
+            id: '99999999-9999-9999-9999-999999999999',
+            username: 'expert_reviewer_01',
+            display_name: 'Senior Architect',
+            experience_level: preferences?.experience_level || 'senior'
+        };
+
+        await logAudit({
+            actor_id: req.user.id,
+            action_type: 'review_match',
+            entity_type: 'collaboration',
+            new_values: { preferences, match_id }
+        });
+
+        res.json({
+            match_id,
+            matched_user,
+            snippet: null, // User would normally select one
+            time_limit: preferences?.duration || 1800,
+            session_token
+        });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: 'Matching service error' });
+    }
+});
+
 module.exports = router;

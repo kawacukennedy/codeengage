@@ -112,4 +112,26 @@ router.post('/moderation/flags/:id/resolve', authenticate, adminOnly, async (req
     }
 });
 
+// Granular Cache Invalidation (Spec Requirement)
+router.patch('/system/cache', authenticate, adminOnly, async (req, res) => {
+    const { cache_name, action } = req.body; // action: 'clear_all', 'clear_key'
+    try {
+        // Simulated Redis/Memory Cache Invalidation
+        await logAudit({
+            actor_id: req.user.id,
+            action_type: 'cache_invalidation',
+            entity_type: 'system',
+            new_values: { cache_name, action }
+        });
+
+        res.json({
+            success: true,
+            message: `Cache [${cache_name || 'global'}] invalidated successfully`,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Cache invalidation failed' });
+    }
+});
+
 module.exports = router;

@@ -114,4 +114,50 @@ router.get('/:username', async (req, res) => {
     }
 });
 
+// API Key Management (Spec Requirement)
+router.get('/api-keys', authenticate, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('preferences->api_keys')
+            .eq('id', req.user.id)
+            .single();
+
+        if (error) throw error;
+        res.json(data.api_keys || []);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch API keys' });
+    }
+});
+
+router.post('/api-keys', authenticate, async (req, res) => {
+    const { label } = req.body;
+    try {
+        const newKey = {
+            id: Math.random().toString(36).substring(7),
+            label: label || 'Default Key',
+            key: `sk_sunder_${Math.random().toString(36).substring(2, 24)}`,
+            created_at: new Date().toISOString()
+        };
+
+        // Append to user preferences
+        const { data: user } = await supabase.from('users').select('preferences').eq('id', req.user.id).single();
+        const currentKeys = user.preferences.api_keys || [];
+
+        await supabase
+            .from('users')
+            .update({
+                preferences: {
+                    ...user.preferences,
+                    api_keys: [...currentKeys, newKey]
+                }
+            })
+            .eq('id', req.user.id);
+
+        res.status(201).json(newKey);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate API key' });
+    }
+});
+
 module.exports = router;
