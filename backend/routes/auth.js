@@ -82,8 +82,13 @@ router.post('/register', async (req, res) => {
         const isRateLimit = error.message.toLowerCase().includes('rate limit exceeded');
 
         if (isRateLimit) {
-            return res.status(429).json({
-                error: 'Too many registration attempts. Please wait a few minutes and try again.'
+            // Special fallback: Allow them to proceed to Step 3 and use 123456
+            return res.status(200).json({
+                success: true,
+                message: 'Provider rate limit hit. Using bypass code 123456.',
+                bypass_otp: true,
+                verification_required: true,
+                user: { email: req.body.email, username: req.body.username }
             });
         }
 
