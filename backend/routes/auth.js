@@ -32,17 +32,18 @@ router.post('/register', async (req, res) => {
 
     // Local Cooldown Check
     const lastAttempt = registrationAttempts.get(key);
-    if (lastAttempt && Date.now() - lastAttempt < COOLDOWN_MS) {
-        const remaining = Math.ceil((COOLDOWN_MS - (Date.now() - lastAttempt)) / 1000);
+    const now = Date.now();
+    if (lastAttempt && now - lastAttempt < COOLDOWN_MS) {
+        const remaining = Math.ceil((COOLDOWN_MS - (now - lastAttempt)) / 1000);
         return res.status(429).json({
-            error: `Please wait ${remaining} seconds before trying again.`,
+            error: `Rate limit hit. Please wait ${remaining} seconds.`,
             retryAfter: remaining
         });
     }
 
     try {
         // Record attempt
-        registrationAttempts.set(key, Date.now());
+        registrationAttempts.set(key, now);
 
         const { data, error } = await supabase.auth.signUp({
             email,
