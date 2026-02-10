@@ -65,7 +65,12 @@ router.post('/register', async (req, res) => {
             username: req.body.username,
             stack: error.stack
         });
-        res.status(500).json({ error: error.message });
+
+        const isValidationError = error.message.includes('at least 6 characters') ||
+            error.message.includes('already registered') ||
+            error.message.includes('invalid email');
+
+        res.status(isValidationError ? 400 : 500).json({ error: error.message });
     }
 });
 

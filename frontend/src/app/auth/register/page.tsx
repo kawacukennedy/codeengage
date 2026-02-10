@@ -34,7 +34,20 @@ export default function Register() {
         theme: 'dark'
     });
 
-    const nextStep = () => setStep(s => Math.min(s + 1, 3));
+    const nextStep = () => {
+        if (step === 1) {
+            if (!formData.username || !formData.email || !formData.password) {
+                setError('All fields are required');
+                return;
+            }
+            if (formData.password.length < 6) {
+                setError('Password must be at least 6 characters');
+                return;
+            }
+        }
+        setError(null);
+        setStep(s => Math.min(s + 1, 3));
+    };
     const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
     const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
