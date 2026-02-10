@@ -37,22 +37,57 @@ export default function Register() {
     const nextStep = () => setStep(s => Math.min(s + 1, 3));
     const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
+    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+
     const handleRegister = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await fetchApi('/auth/register', {
+            await fetchApi('/auth/register', {
                 method: 'POST',
                 body: JSON.stringify(formData)
             });
-            setUser(data.user);
-            setToken(data.access_token);
+            nextStep(); // Move to verification step
+        } catch (err: any) {
+            setError(err.message);
+            setStep(1);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleVerify = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const code = verificationCode.join('');
+            const data = await fetchApi('/auth/verify', {
+                method: 'POST',
+                body: JSON.stringify({ email: formData.email, code })
+            });
+
+            // In a real app, verify returns the user and token
+            // Here we'll simulate the store update
+            setUser(data.user || { email: formData.email, username: formData.username });
+            setToken(data.access_token || 'simulated_token');
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.message);
-            setStep(1); // Go back to credentials if there's an error
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleCodeChange = (index: number, value: string) => {
+        if (!/^\d*$/.test(value)) return;
+        const newCode = [...verificationCode];
+        newCode[index] = value.slice(-1);
+        setVerificationCode(newCode);
+
+        // Auto-focus next input
+        if (value && index < 5) {
+            const nextInput = document.getElementById(`code-${index + 1}`);
+            nextInput?.focus();
         }
     };
 
@@ -185,17 +220,28 @@ export default function Register() {
                                 We've sent a 6-digit verification code to <span className="text-white font-medium">{formData.email}</span>. Please enter it below.
                             </p>
                             <div className="flex gap-3 justify-center">
-                                {[1, 2, 3, 4, 5, 6].map(i => (
-                                    <div key={i} className="w-10 h-14 bg-slate-900 border border-white/5 rounded-xl flex items-center justify-center text-xl font-mono text-white">
-                                        -
-                                    </div>
+                                {verificationCode.map((digit, i) => (
+                                    <input
+                                        key={i}
+                                        id={`code-${i}`}
+                                        type="text"
+                                        maxLength={1}
+                                        className="w-10 h-14 bg-slate-900 border border-white/5 rounded-xl flex items-center justify-center text-center text-xl font-mono text-white focus:outline-none focus:border-violet-500/50 transition-all"
+                                        value={digit}
+                                        onChange={(e) => handleCodeChange(i, e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Backspace' && !digit && i > 0) {
+                                                document.getElementById(`code-${i - 1}`)?.focus();
+                                            }
+                                        }}
+                                    />
                                 ))}
                             </div>
                         </div>
                     )}
 
                     <div className="flex gap-4 pt-4">
-                        {step > 1 && (
+                        {step > 1 && step < 3 && (
                             <button
                                 onClick={prevStep}
                                 className="px-6 py-4 border border-white/10 text-slate-400 hover:text-white font-bold rounded-xl hover:bg-white/5 transition-all text-sm uppercase tracking-widest flex items-center gap-2"
@@ -205,7 +251,7 @@ export default function Register() {
                         )}
                         <button
                             disabled={isLoading}
-                            onClick={step === 3 ? handleRegister : nextStep}
+                            onClick={step === 1 ? nextStep : step === 2 ? handleRegister : handleVerify}
                             className="flex-1 py-4 bg-white text-slate-950 font-black rounded-xl hover:bg-slate-200 transition-all shadow-xl shadow-white/10 uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {isLoading ? 'Processing...' : (step === 3 ? 'Complete Setup' : 'Continue')} <ChevronRight size={18} />
