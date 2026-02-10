@@ -22,16 +22,42 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
     const { user } = useAuthStore();
 
-    const { data: snippets, isLoading: snippetsLoading } = useQuery({
-        queryKey: ['recent-snippets'],
-        queryFn: () => fetchApi('/snippets?limit=4')
+    const { data: profileData, isLoading: profileLoading } = useQuery({
+        queryKey: ['user-profile', user?.username],
+        queryFn: () => fetchApi(`/profiles/${user?.username}`),
+        enabled: !!user?.username
+    });
+
+    const { data: trendingSnippets, isLoading: trendingLoading } = useQuery({
+        queryKey: ['trending-snippets'],
+        queryFn: () => fetchApi('/snippets?limit=4&sort=trending')
     });
 
     const stats = [
-        { label: "Active Snippets", value: "24", icon: Code2, color: "text-blue-400" },
-        { label: "Total Stars", value: "156", icon: Star, color: "text-amber-400" },
-        { label: "AI Usage", value: "84%", icon: BrainCircuit, color: "text-violet-400" },
-        { label: "Contributions", value: "12", icon: Activity, color: "text-emerald-400" }
+        {
+            label: "Total Snippets",
+            value: profileData?.snippets?.length || 0,
+            icon: Code2,
+            color: "text-blue-400"
+        },
+        {
+            label: "Achievement Pts",
+            value: profileData?.achievement_points || 0,
+            icon: Star,
+            color: "text-amber-400"
+        },
+        {
+            label: "Coding Streak",
+            value: `${profileData?.coding_streak || 0}d`,
+            icon: TrendingUp,
+            color: "text-violet-400"
+        },
+        {
+            label: "Last Activity",
+            value: profileData?.last_active_at ? formatRelativeTime(profileData.last_active_at) : 'N/A',
+            icon: Activity,
+            color: "text-emerald-400"
+        }
     ];
 
     return (
@@ -74,9 +100,9 @@ export default function Dashboard() {
                                 <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", stat.color.replace('text', 'bg').replace('400', '500/10'))}>
                                     <stat.icon size={24} className={stat.color} />
                                 </div>
-                                <div>
+                                <div className="flex flex-col items-center">
                                     <div className="text-2xl font-black text-white italic">{stat.value}</div>
-                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</div>
+                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center truncate w-full">{stat.label}</div>
                                 </div>
                             </div>
                         ))}
@@ -118,13 +144,13 @@ export default function Dashboard() {
                             </Link>
                         </div>
 
-                        {snippetsLoading ? (
+                        {trendingLoading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {[1, 2, 3, 4].map(i => <div key={i} className="h-48 bg-white/5 rounded-3xl animate-pulse" />)}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {snippets?.snippets?.map((snippet: any) => (
+                                {trendingSnippets?.snippets?.map((snippet: any) => (
                                     <Link key={snippet.id} href={`/snippets/${snippet.id}`} className="glass group p-6 rounded-[32px] border border-white/5 hover:border-violet-500/30 transition-all flex flex-col gap-4">
                                         <div className="flex items-center justify-between">
                                             <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">

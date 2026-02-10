@@ -20,9 +20,13 @@ import {
     Trophy,
     Briefcase,
     Users,
-    ChevronRight
+    ChevronRight,
+    FileCode,
+    TrendingUp,
+    Layout
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { cn, fetchApi, formatRelativeTime } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
@@ -94,42 +98,32 @@ export default function ProfilePage() {
 
     const tabs = ['Overview', 'Snippets', 'Achievements', 'Activity', 'Organizations', 'Network'];
 
-    const { data: profile, isLoading, error } = useQuery({
+    const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
         queryKey: ['profile', username],
-        queryFn: () => ({
-            username: username,
-            display_name: 'Kennedy Kennedy',
-            bio: 'Principal Software Architect | Building Neural Code Networks | Open Source Evangelist and High-Fidelity UI enthusiast.',
-            location: 'San Francisco, CA',
-            created_at: new Date().toISOString(),
-            snippets: [
-                { id: '1', title: 'Auth Overlay', language: 'TypeScript', updated_at: new Date().toISOString() },
-                { id: '2', title: 'Neural Match', language: 'Rust', updated_at: new Date().toISOString() }
-            ],
-            radarData: [
-                { label: 'Security', value: 85 },
-                { label: 'Speed', value: 92 },
-                { label: 'Syntax', value: 78 },
-                { label: 'Community', value: 95 },
-                { label: 'AI Sync', value: 88 }
-            ],
-            personality: {
-                title: 'Philosophical Architect',
-                trait: 'Calculated Risk-Taker',
-                description: 'Prioritizes elegant abstractions over rapid delivery. High neural affinity with Rust and Elixir nodes.'
-            }
-        })
+        queryFn: () => fetchApi(`/profiles/${username}`)
     });
+
+    const { data: personaData, isLoading: personaLoading } = useQuery({
+        queryKey: ['persona', username],
+        queryFn: () => fetchApi(`/profiles/${username}/persona`)
+    });
+
+    const isLoading = profileLoading || personaLoading;
+    const error = profileError;
 
     if (isLoading) return <DashboardLayout><div className="animate-pulse glass h-96 rounded-[40px]" /></DashboardLayout>;
     if (error || !profile) return <DashboardLayout><div className="text-white">Profile Exception Encountered.</div></DashboardLayout>;
 
     const stats = [
-        { label: 'Snippets', value: profile.snippets?.length || 0 },
-        { label: 'Followers', value: '2.4k' },
-        { label: 'Reputation', value: '12.5k' },
-        { label: 'Certs', value: '14' },
+        { label: 'Snippets', value: profile?.snippets?.length || 0 },
+        { label: 'Achievements', value: profile?.achievement_points || 0 },
+        { label: 'Streak', value: profile?.coding_streak || 0 },
+        { label: 'Network', value: '2.4k' }, // Network size (Followers) is still mock in visual, but reputation is pts
     ];
+
+    const initials = profile?.display_name
+        ? profile.display_name.split(' ').map((n: any) => n[0]).join('').toUpperCase()
+        : profile?.username?.slice(0, 2).toUpperCase() || '??';
 
     return (
         <DashboardLayout>
@@ -141,17 +135,23 @@ export default function ProfilePage() {
                     <div className="flex flex-col md:flex-row gap-12 items-start md:items-center relative z-10">
                         <div className="w-40 h-40 rounded-[42px] bg-gradient-to-br from-violet-500 via-blue-500 to-emerald-500 p-1 shadow-2xl shadow-violet-500/20">
                             <div className="w-full h-full rounded-[38px] bg-slate-950 flex items-center justify-center overflow-hidden">
-                                <span className="text-5xl font-black bg-gradient-to-br from-white to-slate-500 bg-clip-text text-transparent italic">KC</span>
+                                {profile?.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-5xl font-black bg-gradient-to-br from-white to-slate-500 bg-clip-text text-transparent italic">{initials}</span>
+                                )}
                             </div>
                         </div>
 
                         <div className="flex-1 space-y-6">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div>
-                                    <h1 className="text-5xl font-black text-white uppercase italic tracking-tighter">{profile.display_name}</h1>
+                                    <h1 className="text-5xl font-black text-white uppercase italic tracking-tighter">{profile?.display_name || profile?.username}</h1>
                                     <div className="flex items-center gap-3 mt-2">
-                                        <span className="text-violet-400 font-mono text-xs tracking-[0.2em]">@{profile.username}</span>
-                                        <span className="px-3 py-1 bg-violet-600 font-black text-[10px] text-white rounded-full uppercase tracking-widest italic">Core Faculty</span>
+                                        <span className="text-violet-400 font-mono text-xs tracking-[0.2em]">@{profile?.username}</span>
+                                        {profile?.achievement_points > 1000 && (
+                                            <span className="px-3 py-1 bg-violet-600 font-black text-[10px] text-white rounded-full uppercase tracking-widest italic">Core Faculty</span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -161,12 +161,12 @@ export default function ProfilePage() {
                             </div>
 
                             <p className="text-slate-400 max-w-2xl leading-relaxed font-medium">
-                                {profile.bio}
+                                {profile?.bio || "This user hasn't added a bio yet. They are busy building the future."}
                             </p>
 
                             <div className="flex flex-wrap gap-8 text-xs font-bold text-slate-600 uppercase tracking-widest">
-                                <span className="flex items-center gap-2"><MapPin size={16} className="text-violet-500" /> {profile.location}</span>
-                                <span className="flex items-center gap-2"><Calendar size={16} className="text-violet-500" /> Initialized 2024</span>
+                                <span className="flex items-center gap-2"><MapPin size={16} className="text-violet-500" /> {profile?.preferences?.location || 'Digital Space'}</span>
+                                <span className="flex items-center gap-2"><Calendar size={16} className="text-violet-500" /> Joined {profile?.created_at ? new Date(profile.created_at).getFullYear() : '2024'}</span>
                             </div>
                         </div>
                     </div>
@@ -213,15 +213,15 @@ export default function ProfilePage() {
                                     <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-8 flex items-center gap-3 italic">
                                         <Zap size={18} className="text-violet-400" /> Coding Style Radar
                                     </h3>
-                                    <RadarChart data={profile.radarData} />
+                                    <RadarChart data={Object.entries(personaData?.radar || {}).map(([label, value]) => ({ label: label.toUpperCase(), value: value as number }))} />
                                     <div className="mt-8 pt-8 border-t border-white/5 grid grid-cols-2 gap-4">
                                         <div className="text-center">
-                                            <p className="text-xl font-black text-white italic">88%</p>
-                                            <p className="text-[9px] text-slate-500 font-black uppercase">Affinity</p>
+                                            <p className="text-xl font-black text-white italic">{personaData?.radar?.performance || 0}%</p>
+                                            <p className="text-[9px] text-slate-500 font-black uppercase">Efficiency</p>
                                         </div>
                                         <div className="text-center">
-                                            <p className="text-xl font-black text-white italic">A+</p>
-                                            <p className="text-[9px] text-slate-500 font-black uppercase">Consistence</p>
+                                            <p className="text-xl font-black text-white italic">{personaData?.radar?.security || 0}%</p>
+                                            <p className="text-[9px] text-slate-500 font-black uppercase">Security</p>
                                         </div>
                                     </div>
                                 </div>
@@ -238,10 +238,10 @@ export default function ProfilePage() {
                                         <div className="space-y-6">
                                             <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl">
                                                 <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Classification</p>
-                                                <p className="text-lg font-black text-white italic">{profile.personality.title}</p>
+                                                <p className="text-lg font-black text-white italic">{personaData?.traits?.[0] || 'Unknown Origin'}</p>
                                             </div>
                                             <p className="text-slate-400 text-sm font-medium leading-relaxed">
-                                                "{profile.personality.description}"
+                                                "{personaData?.summary || "Analyzing coding patterns to determine AI affinity. System processing..."}"
                                             </p>
                                         </div>
                                     </div>
@@ -257,15 +257,18 @@ export default function ProfilePage() {
                                         <Activity size={18} className="text-blue-400" /> Featured Nodes
                                     </h3>
                                     <div className="space-y-6">
-                                        {profile.snippets.map((snip: any) => (
-                                            <div key={snip.id} className="group p-6 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-violet-500/30 transition-all cursor-pointer">
+                                        {profile?.snippets?.slice(0, 3).map((snip: any) => (
+                                            <Link key={snip.id} href={`/snippets/${snip.id}`} className="block group p-6 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-violet-500/30 transition-all cursor-pointer">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-[10px] font-black text-violet-400 uppercase tracking-widest">{snip.language}</span>
-                                                    <Star size={12} className="text-amber-400" fill="currentColor" />
+                                                    <div className="flex items-center gap-1 text-amber-400">
+                                                        <Star size={10} fill="currentColor" />
+                                                        <span className="text-[10px] font-bold">{snip.star_count}</span>
+                                                    </div>
                                                 </div>
-                                                <h4 className="text-sm font-black text-white uppercase tracking-tight italic">{snip.title}</h4>
-                                                <p className="text-[10px] text-slate-600 font-bold mt-2 uppercase">Synthesized 2 days ago</p>
-                                            </div>
+                                                <h4 className="text-sm font-black text-white uppercase tracking-tight italic line-clamp-1">{snip.title}</h4>
+                                                <p className="text-[10px] text-slate-600 font-bold mt-2 uppercase">{formatRelativeTime(snip.created_at)}</p>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
@@ -274,27 +277,26 @@ export default function ProfilePage() {
 
                         {activeTab === 'Snippets' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {[1, 2, 3, 4, 5, 6].map(i => (
-                                    <div key={i} className="glass p-8 rounded-[40px] border border-white/5 group hover:scale-[1.02] transition-all">
+                                {profile?.snippets?.map((snip: any) => (
+                                    <Link key={snip.id} href={`/snippets/${snip.id}`} className="glass p-8 rounded-[40px] border border-white/5 group hover:scale-[1.02] transition-all flex flex-col">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center">
-                                                <LayoutGrid size={18} className="text-violet-400" />
+                                                <FileCode size={18} className="text-violet-400" />
                                             </div>
                                             <div className="flex gap-2">
-                                                <span className="px-3 py-1 bg-white/5 text-slate-500 rounded-lg text-[9px] font-black uppercase">React</span>
-                                                <span className="px-3 py-1 bg-white/5 text-slate-500 rounded-lg text-[9px] font-black uppercase">UI</span>
+                                                <span className="px-3 py-1 bg-white/5 text-slate-500 rounded-lg text-[9px] font-black uppercase">{snip.language}</span>
                                             </div>
                                         </div>
-                                        <h3 className="text-lg font-black text-white uppercase italic tracking-tight mb-2">Refactored Layer-{i}</h3>
-                                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">Internal neural logic for high-fidelity state management...</p>
-                                        <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                                        <h3 className="text-lg font-black text-white uppercase italic tracking-tight mb-2 group-hover:text-violet-400 transition-colors line-clamp-1">{snip.title}</h3>
+                                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 line-clamp-2">{snip.description || 'No description provided'}</p>
+                                        <div className="mt-auto flex items-center justify-between pt-6 border-t border-white/5">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-slate-800" />
-                                                <span className="text-[10px] font-bold text-slate-600 uppercase">2k Views</span>
+                                                <Star size={14} className="text-amber-400" fill="currentColor" />
+                                                <span className="text-[10px] font-bold text-slate-600 uppercase">{snip.star_count} Stars</span>
                                             </div>
-                                            <Terminal size={14} className="text-slate-700" />
+                                            <span className="text-[9px] font-black text-slate-700 uppercase">{formatRelativeTime(snip.created_at)}</span>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         )}

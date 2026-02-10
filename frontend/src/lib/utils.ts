@@ -8,10 +8,14 @@ export function cn(...inputs: ClassValue[]) {
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
+    const authStorage = localStorage.getItem('sunder-auth');
+    const token = authStorage ? JSON.parse(authStorage).state.token : null;
+
     const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             ...options.headers,
         },
     });

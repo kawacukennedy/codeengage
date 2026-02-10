@@ -29,7 +29,15 @@ router.get('/', async (req, res) => {
         if (visibility) query = query.eq('visibility', visibility);
 
         if (language) query = query.eq('language', language);
-        if (author) query = query.eq('author:users.username', author);
+
+        if (author) {
+            const { data: userData } = await supabase.from('users').select('id').eq('username', author).maybeSingle();
+            if (userData) {
+                query = query.eq('author_id', userData.id);
+            } else {
+                return res.json({ snippets: [], pagination: { total: 0, pages: 0, page: parseInt(page), limit: parseInt(limit) } });
+            }
+        }
         if (organization) query = query.eq('organization_id', organization);
         if (tags) query = query.contains('tags', tags.split(','));
         if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);

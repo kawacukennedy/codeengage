@@ -15,14 +15,24 @@ import {
     Sun,
     Moon,
     Search,
-    TrendingUp
+    TrendingUp,
+    LogOut
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const { sidebarCollapsed, toggleSidebar, theme, toggleTheme } = useUIStore();
+    const { user, logout } = useAuthStore();
+
+    const handleLogout = () => {
+        logout();
+        router.push('/auth/login');
+    };
 
     const navItems = [
         { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -32,7 +42,7 @@ export default function Sidebar() {
         { label: 'Learning Paths', icon: GraduationCap, href: '/learning/paths' },
         { label: 'Leaderboard', icon: TrendingUp, href: '/learning/leaderboard' },
         { label: 'AI Pair', icon: BrainCircuit, href: '/ai/pair' },
-        { label: 'Profile', icon: User, href: '/profile/edit' },
+        { label: 'My Profile', icon: User, href: `/profile/${user?.username}` },
     ];
 
     return (
@@ -44,9 +54,9 @@ export default function Sidebar() {
         >
             <div className="p-6 flex items-center justify-between">
                 {!sidebarCollapsed && (
-                    <span className="text-2xl font-bold bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-transparent">
-                        Sunder
-                    </span>
+                    <Link href="/dashboard" className="text-2xl font-black bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-transparent italic tracking-tighter">
+                        SUNDER
+                    </Link>
                 )}
                 <button
                     onClick={toggleSidebar}
@@ -84,6 +94,13 @@ export default function Sidebar() {
                 >
                     {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
                     {!sidebarCollapsed && <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+                </button>
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-4 px-4 py-3 text-slate-500 hover:bg-red-500/10 hover:text-red-400 rounded-2xl transition-all"
+                >
+                    <LogOut size={22} />
+                    {!sidebarCollapsed && <span className="font-medium">Logout</span>}
                 </button>
             </div>
         </aside>

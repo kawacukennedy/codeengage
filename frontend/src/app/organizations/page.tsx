@@ -13,16 +13,27 @@ import {
     TrendingUp,
     Zap
 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchApi } from '@/lib/utils';
 
 export default function OrganizationsPage() {
-    const { data: orgs, isLoading } = useQuery({
+    const [searchQuery, setSearchQuery] = useState('');
+    const { data: orgsData, isLoading } = useQuery({
         queryKey: ['my-organizations'],
         queryFn: () => fetchApi('/organizations')
     });
+
+    const organizations = useMemo(() => {
+        const list = orgsData?.organizations || [];
+        if (!searchQuery) return list;
+        return list.filter((org: any) =>
+            org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            org.slug.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [orgsData, searchQuery]);
 
     return (
         <DashboardLayout>
@@ -60,7 +71,7 @@ export default function OrganizationsPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-bold text-slate-400 uppercase">Active Nodes</span>
-                                        <span className="text-white font-black">{orgs?.organizations?.length || 0}</span>
+                                        <span className="text-white font-black">{organizations.length}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-bold text-slate-400 uppercase">Global Cores</span>
@@ -76,6 +87,8 @@ export default function OrganizationsPage() {
                                     <input
                                         type="text"
                                         placeholder="Filter Nexus..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full pl-9 pr-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-xs text-white placeholder:text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all font-bold"
                                     />
                                 </div>
@@ -98,9 +111,9 @@ export default function OrganizationsPage() {
                             <div className="space-y-6">
                                 {[1, 2, 3].map(i => <div key={i} className="h-40 bg-white/5 rounded-[2.5rem] animate-pulse" />)}
                             </div>
-                        ) : orgs?.organizations?.length > 0 ? (
+                        ) : organizations.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                                {orgs.organizations.map((org: any) => (
+                                {organizations.map((org: any) => (
                                     <Link
                                         key={org.id}
                                         href={`/organizations/${org.slug}`}

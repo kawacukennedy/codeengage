@@ -1,8 +1,14 @@
 'use client';
 
 import { Search, Bell, Command } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 export default function Navbar() {
+    const { user } = useAuthStore();
+    const initials = user?.display_name
+        ? user.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+        : user?.username?.slice(0, 2).toUpperCase() || '??';
+
     return (
         <header className="h-20 glass border-b border-white/10 flex items-center justify-between px-8 z-40">
             <div className="flex-1 max-w-xl">
@@ -28,14 +34,20 @@ export default function Navbar() {
 
                 <div className="flex items-center gap-3 pl-6 border-l border-white/10">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-white">Kennedy Code</p>
-                        <p className="text-xs text-slate-500">Pro Developer</p>
+                        <p className="text-sm font-semibold text-white">{user?.display_name || user?.username}</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest text-[10px] font-bold">
+                            {user?.achievement_points > 1000 ? 'Architect' : 'Developer'}
+                        </p>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 p-[2px]">
-                        <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center font-bold text-white text-xs">
-                            KC
+                    {user?.avatar_url ? (
+                        <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-xl" />
+                    ) : (
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 p-[2px]">
+                            <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center font-bold text-white text-xs">
+                                {initials}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </header>
