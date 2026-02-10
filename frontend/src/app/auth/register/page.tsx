@@ -63,46 +63,25 @@ export default function Register() {
 
     const handleRegister = async () => {
         if (isLoading || cooldown > 0) return;
-        setIsLoading(true);
-        setError(null);
-        try {
-            await fetchApi('/auth/register', {
-                method: 'POST',
-                body: JSON.stringify(formData)
-            });
-            nextStep(); // Move to verification step
-        } catch (err: any) {
-            setError(err.message);
-            if (err.message.includes('wait')) {
-                const match = err.message.match(/(\d+)/);
-                if (match) setCooldown(parseInt(match[1]));
-            }
-            setStep(1);
-        } finally {
-            setIsLoading(false);
+
+        const pin = verificationCode.slice(0, 4).join('');
+        if (pin.length < 4) {
+            setError('Please enter a 4-digit security PIN');
+            return;
         }
-    };
 
-    const handleVerify = async () => {
-        if (isLoading || cooldown > 0) return;
         setIsLoading(true);
         setError(null);
         try {
-            const code = verificationCode.join('');
-            if (code.length < 6) throw new Error('Please enter all 6 digits');
-
-            const data = await fetchApi('/auth/verify', {
+            const data = await fetchApi('/auth/register', {
                 method: 'POST',
-                body: JSON.stringify({ email: formData.email, code })
+                body: JSON.stringify({ ...formData, pin })
             });
 
-            if (data.user && data.access_token) {
-                setUser(data.user);
-                setToken(data.access_token);
-                router.push('/dashboard');
-            } else {
-                throw new Error('Verification failed: Missing session data');
-            }
+            // Registration successful, now redirect to login or auto-login?
+            // User requested login with only PIN, so let's redirect to login.
+            alert('Account created! Please login with your PIN.');
+            router.push('/auth/login');
         } catch (err: any) {
             setError(err.message);
             if (err.message.includes('wait')) {
@@ -118,10 +97,10 @@ export default function Register() {
         if (!/^\d*$/.test(value)) return;
         const newCode = [...verificationCode];
         newCode[index] = value.slice(-1);
-        setVerificationCode(newCode);
+        setVerificationCode(newCode.slice(0, 4)); // Force 4 digits
 
         // Auto-focus next input
-        if (value && index < 5) {
+        if (value && index < 3) {
             const nextInput = document.getElementById(`code-${index + 1}`);
             nextInput?.focus();
         }
@@ -130,7 +109,7 @@ export default function Register() {
     const steps = [
         { id: 1, title: 'Credentials', icon: Lock },
         { id: 2, title: 'Preferences', icon: Sparkles },
-        { id: 3, title: 'Verify', icon: ShieldCheck },
+        { id: 3, title: 'Security PIN', icon: ShieldCheck },
     ];
 
     return (
@@ -251,22 +230,22 @@ export default function Register() {
                             <div className="w-16 h-16 bg-emerald-600/20 rounded-[24px] flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
                                 <ShieldCheck className="text-emerald-400" size={32} />
                             </div>
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Check your email</h2>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">Set your Login PIN</h2>
                             <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">
-                                We've sent a 6-digit verification code to <span className="text-white font-medium">{formData.email}</span>. Please enter it below.
+                                Create a 4-digit security PIN for daily access to your dashboard.
                             </p>
                             <div className="flex gap-3 justify-center">
-                                {verificationCode.map((digit, i) => (
+                                {[0, 1, 2, 3].map((i) => (
                                     <input
                                         key={i}
                                         id={`code-${i}`}
-                                        type="text"
+                                        type="password"
                                         maxLength={1}
-                                        className="w-10 h-14 bg-slate-900 border border-white/5 rounded-xl flex items-center justify-center text-center text-xl font-mono text-white focus:outline-none focus:border-violet-500/50 transition-all"
-                                        value={digit}
+                                        className="w-12 h-16 bg-slate-900 border border-white/5 rounded-xl flex items-center justify-center text-center text-2xl font-mono text-white focus:outline-none focus:border-violet-500/50 transition-all shadow-inner"
+                                        value={verificationCode[i] || ''}
                                         onChange={(e) => handleCodeChange(i, e.target.value)}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Backspace' && !digit && i > 0) {
+                                            if (e.key === 'Backspace' && !verificationCode[i] && i > 0) {
                                                 document.getElementById(`code-${i - 1}`)?.focus();
                                             }
                                         }}
@@ -277,7 +256,7 @@ export default function Register() {
                     )}
 
                     <div className="flex gap-4 pt-4">
-                        {step > 1 && step < 3 && (
+                        {step > 1 && (
                             <button
                                 onClick={prevStep}
                                 className="px-6 py-4 border border-white/10 text-slate-400 hover:text-white font-bold rounded-xl hover:bg-white/5 transition-all text-sm uppercase tracking-widest flex items-center gap-2"
@@ -287,7 +266,7 @@ export default function Register() {
                         )}
                         <button
                             disabled={isLoading || cooldown > 0}
-                            onClick={step === 1 ? nextStep : step === 2 ? handleRegister : handleVerify}
+                            onClick={step === 1 || step === 2 ? nextStep : handleRegister}
                             className="flex-1 py-4 bg-white text-slate-950 font-black rounded-xl hover:bg-slate-200 transition-all shadow-xl shadow-white/10 uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {isLoading ? 'Processing...' : cooldown > 0 ? `Wait ${cooldown}s` : (step === 3 ? 'Complete Setup' : 'Continue')} <ChevronRight size={18} />

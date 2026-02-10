@@ -10,6 +10,7 @@ CREATE TABLE users (
     username varchar(50) UNIQUE NOT NULL,
     email varchar(255) UNIQUE NOT NULL,
     password_hash varchar(255),
+    login_pin_hash varchar(255),
     display_name varchar(100),
     avatar_url text,
     bio text,
@@ -344,13 +345,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.users (id, email, username, display_name, password_hash, preferences)
+  INSERT INTO public.users (id, email, username, display_name, password_hash, login_pin_hash, preferences)
   VALUES (
     new.id, 
     new.email, 
     COALESCE(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8)),
     COALESCE(new.raw_user_meta_data->>'display_name', new.raw_user_meta_data->>'username'),
     'managed_by_supabase',
+    new.raw_user_meta_data->>'pin_hash',
     COALESCE(new.raw_user_meta_data->'preferences', '{"theme": "dark", "editor_mode": "advanced"}'::jsonb)
   )
   ON CONFLICT (id) DO UPDATE SET

@@ -26,7 +26,8 @@ const COOLDOWN_MS = 30000;
 
 // Register
 router.post('/register', async (req, res) => {
-    const { email, password, username, displayName, preferences } = req.body;
+    const { email, password, username, displayName, preferences, pin } = req.body;
+    const bcrypt = require('bcryptjs');
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const key = email || ip;
 
@@ -45,6 +46,12 @@ router.post('/register', async (req, res) => {
         // Record attempt
         registrationAttempts.set(key, now);
 
+        if (!pin || pin.length !== 4) {
+            return res.status(400).json({ error: 'A 4-digit security PIN is required' });
+        }
+
+        const pinHash = await bcrypt.hash(pin, 10);
+
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -52,6 +59,7 @@ router.post('/register', async (req, res) => {
                 data: {
                     username,
                     display_name: displayName,
+                    pin_hash: pinHash,
                     preferences
                 }
             }
@@ -59,13 +67,10 @@ router.post('/register', async (req, res) => {
 
         if (error) throw error;
 
-        // Note: Profile creation and entry in 'users' table is now handled 
-        // by a database trigger (on_auth_user_created) for RLS safety.
-
         res.json({
             user: data.user,
             access_token: data.session?.access_token,
-            verification_required: !data.session // If no session, usually means email confirm is on
+            message: 'Registration successful. You can now login with your PIN.'
         });
     } catch (error) {
         console.error('[Registration Error]', {
@@ -117,28 +122,59 @@ router.post('/verify', async (req, res) => {
     }
 });
 
-// Login (with simulated 2FA)
+// Login (PIN-Based)
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { email, pin } = req.body;
+    const bcrypt = require('bcryptjs');
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (!email || !pin) {
+            return res.status(400).json({ error: 'Email and 4-digit PIN are required' });
+        }
 
-        // Simulate 2FA Requirement for 20% of logins
-        const mfaEnabled = email.includes('admin') || Math.random() > 0.8;
+        // Fetch user from public.users to get the pin_hash
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
 
-        setAuthCookies(res, data.session.access_token, data.session.refresh_token);
+        if (fetchError || !user || !user.login_pin_hash) {
+            return res.status(401).json({ error: 'Invalid email or PIN' });
+        }
+
+        const isMatch = await bcrypt.compare(pin, user.login_pin_hash);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid email or PIN' });
+        }
+
+        // Issue a local JWT
+        const token = jwt.sign(
+            {
+                sub: user.id,
+                email: user.email,
+                username: user.username,
+                display_name: user.display_name
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        setAuthCookies(res, token, 'not_applicable_for_pin_auth');
 
         res.json({
-            user: data.user,
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-            mfa_required: mfaEnabled,
-            mfa_token: mfaEnabled ? 'MFA_TEMP_' + Math.random().toString(36).substring(7) : null
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                display_name: user.display_name,
+                preferences: user.preferences
+            },
+            access_token: token
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('[Login Error]', error);
+        res.status(500).json({ error: 'An unexpected error occurred during login' });
     }
 });
 
@@ -178,6 +214,40 @@ router.post('/reset-password', async (req, res) => {
         res.json({ success: true, message: 'Password reset link sent to email' });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Reset PIN (Using original password)
+router.post('/reset-pin', async (req, res) => {
+    const { email, password, newPin } = req.body;
+    const bcrypt = require('bcryptjs');
+
+    try {
+        if (!email || !password || !newPin || newPin.length !== 4) {
+            return res.status(400).json({ error: 'Email, original password, and a new 4-digit PIN are required' });
+        }
+
+        // 1. Verify identity with Supabase using original password
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        if (authError) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        // 2. Hash new PIN
+        const newPinHash = await bcrypt.hash(newPin, 10);
+
+        // 3. Update public.users
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ login_pin_hash: newPinHash })
+            .eq('email', email);
+
+        if (updateError) throw updateError;
+
+        res.json({ success: true, message: 'Security PIN has been reset successfully' });
+    } catch (error) {
+        console.error('[Reset PIN Error]', error);
+        res.status(500).json({ error: 'Failed to reset PIN' });
     }
 });
 
