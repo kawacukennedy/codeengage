@@ -286,11 +286,11 @@ export default function Register() {
                             </button>
                         )}
                         <button
-                            disabled={isLoading}
+                            disabled={isLoading || cooldown > 0}
                             onClick={step === 1 ? nextStep : step === 2 ? handleRegister : handleVerify}
                             className="flex-1 py-4 bg-white text-slate-950 font-black rounded-xl hover:bg-slate-200 transition-all shadow-xl shadow-white/10 uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                            {isLoading ? 'Processing...' : (step === 3 ? 'Complete Setup' : 'Continue')} <ChevronRight size={18} />
+                            {isLoading ? 'Processing...' : cooldown > 0 ? `Wait ${cooldown}s` : (step === 3 ? 'Complete Setup' : 'Continue')} <ChevronRight size={18} />
                         </button>
                     </div>
                     {error && <p className="text-center text-red-400 text-xs font-bold uppercase tracking-tight">{error}</p>}
