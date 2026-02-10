@@ -18,7 +18,9 @@ import {
     Star,
     Zap,
     Trophy,
-    Briefcase
+    Briefcase,
+    Users,
+    ChevronRight
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn, fetchApi, formatRelativeTime } from '@/lib/utils';
