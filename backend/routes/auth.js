@@ -37,7 +37,7 @@ router.post('/register', async (req, res) => {
     if (lastAttempt && now - lastAttempt < COOLDOWN_MS) {
         const remaining = Math.ceil((COOLDOWN_MS - (now - lastAttempt)) / 1000);
         return res.status(429).json({
-            error: `Rate limit hit. Please wait ${remaining} seconds.`,
+            error: `Registration rate limit: please wait ${remaining} seconds before trying again.`,
             retryAfter: remaining
         });
     }
@@ -87,8 +87,10 @@ router.post('/register', async (req, res) => {
         const isRateLimit = error.message.toLowerCase().includes('rate limit exceeded');
 
         if (isRateLimit) {
+            // Force a 30s wait on provider rate limits too
             return res.status(429).json({
-                error: 'Too many registration attempts. Please wait a few minutes and try again.'
+                error: 'System rate limit hit: please wait 30 seconds and try again.',
+                retryAfter: 30
             });
         }
 

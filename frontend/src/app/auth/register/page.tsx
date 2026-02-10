@@ -260,25 +260,44 @@ export default function Register() {
                     )}
 
                     {step === 4 && (
-                        <div className="text-center py-12 space-y-6 animate-in fade-in zoom-in-95 duration-700">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
-                                <div className="relative w-24 h-24 bg-white rounded-[32px] flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                                    <CheckCircle2 className="text-slate-950" size={48} />
+                        <div className="text-center py-10 space-y-8 animate-in fade-in zoom-in-95 duration-1000">
+                            {/* Neural Link Pulse Animation */}
+                            <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
+                                <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping duration-[3s]" />
+                                <div className="absolute inset-2 bg-emerald-500/10 rounded-full animate-pulse" />
+                                <div className="relative w-20 h-20 bg-white rounded-[32px] flex items-center justify-center shadow-2xl rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                                    <CheckCircle2 className="text-slate-950" size={40} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Welcome Agent</h1>
-                                <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Account secured with PIN</p>
+
+                            <div className="space-y-3">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-2">
+                                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Neural Uplink Online</span>
+                                </div>
+                                <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Welcome Agent</h1>
+                                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
+                                    Your secure identity has been cryptographically verified and stored.
+                                </p>
                             </div>
-                            <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
-                                Your neural uplink is ready. You can now access your dashboard using your security PIN.
-                            </p>
+
+                            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-900/50 rounded-2xl border border-white/5 mx-auto max-w-sm">
+                                <div className="text-left space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Status</p>
+                                    <p className="text-sm font-bold text-white">Active</p>
+                                </div>
+                                <div className="text-left space-y-1 border-l border-white/5 pl-4">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Access</p>
+                                    <p className="text-sm font-bold text-white uppercase">PIN Verified</p>
+                                </div>
+                            </div>
+
                             <button
                                 onClick={() => router.push('/auth/login')}
-                                className="w-full py-5 bg-white text-slate-950 rounded-2xl font-black transition-all shadow-xl shadow-white/10 uppercase tracking-widest flex items-center justify-center gap-3 group"
+                                className="w-full py-5 bg-white text-slate-950 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-white/10 uppercase tracking-widest flex items-center justify-center gap-3 group relative overflow-hidden"
                             >
-                                Enter Dashboard <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                Enter Dashboard <ArrowRight className="group-hover:translate-x-2 transition-transform duration-300" size={20} />
                             </button>
                         </div>
                     ) || (
@@ -297,7 +316,18 @@ export default function Register() {
                                         onClick={step === 1 || step === 2 ? nextStep : handleRegister}
                                         className="flex-1 py-4 bg-white text-slate-950 font-black rounded-xl hover:bg-slate-200 transition-all shadow-xl shadow-white/10 uppercase tracking-widest text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                                     >
-                                        {isLoading ? 'Processing...' : cooldown > 0 ? `Wait ${cooldown}s` : (step === 3 ? 'Complete Setup' : 'Continue')} <ChevronRight size={18} />
+                                        {isLoading ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                                                <span>Processing</span>
+                                            </div>
+                                        ) : cooldown > 0 ? (
+                                            <div className="flex items-center gap-2">
+                                                <Lock size={16} className="animate-pulse" />
+                                                <span>Wait {cooldown}s</span>
+                                            </div>
+                                        ) : (step === 3 ? 'Complete Setup' : 'Continue')}
+                                        {step < 3 && !isLoading && cooldown === 0 && <ChevronRight size={18} />}
                                     </button>
                                 )}
                             </div>
