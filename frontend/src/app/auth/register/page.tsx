@@ -79,11 +79,13 @@ export default function Register() {
                 body: JSON.stringify({ email: formData.email, code })
             });
 
-            // In a real app, verify returns the user and token
-            // Here we'll simulate the store update
-            setUser(data.user || { email: formData.email, username: formData.username });
-            setToken(data.access_token || 'simulated_token');
-            router.push('/dashboard');
+            if (data.user && data.access_token) {
+                setUser(data.user);
+                setToken(data.access_token);
+                router.push('/dashboard');
+            } else {
+                throw new Error('Verification failed: Missing session data');
+            }
         } catch (err: any) {
             setError(err.message);
         } finally {

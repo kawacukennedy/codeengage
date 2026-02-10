@@ -63,19 +63,28 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Verify Email (Simulated)
+// Verify Email (Real Supabase OTP)
 router.post('/verify', async (req, res) => {
     const { email, code } = req.body;
     try {
-        // In a real system, we'd check the code against a temp store or Supabase
-        // For this spec compliance, we'll simulate success if code is '123456'
-        if (code === '123456') {
-            await supabase.from('users').update({ email_verified_at: new Date() }).eq('email', email);
-            return res.json({ success: true, message: 'Email verified successfully' });
-        }
-        res.status(400).json({ error: 'Invalid verification code' });
+        const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token: code,
+            type: 'signup'
+        });
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            message: 'Email verified successfully',
+            user: data.user,
+            access_token: data.session?.access_token,
+            refresh_token: data.session?.refresh_token
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('[Verification Error]', { email, message: error.message });
+        res.status(400).json({ error: error.message });
     }
 });
 
