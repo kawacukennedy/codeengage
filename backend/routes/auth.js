@@ -29,22 +29,40 @@ router.post('/register', async (req, res) => {
     const { email, password, username, displayName, preferences, pin } = req.body;
     const bcrypt = require('bcryptjs');
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const key = email || ip;
-
-    // Local Cooldown Check
-    const lastAttempt = registrationAttempts.get(key);
-    const now = Date.now();
-    if (lastAttempt && now - lastAttempt < COOLDOWN_MS) {
-        const remaining = Math.ceil((COOLDOWN_MS - (now - lastAttempt)) / 1000);
-        return res.status(429).json({
-            error: `Registration rate limit: please wait ${remaining} seconds before trying again.`,
-            retryAfter: remaining
-        });
-    }
+    const key = `reg:${email || ip}`;
 
     try {
-        // Record attempt
-        registrationAttempts.set(key, now);
+        // Persistent Cooldown Check (from Database)
+        const { data: limitData, error: limitError } = await supabase
+            .from('rate_limits')
+            .select('*')
+            .eq('key', key)
+            .single();
+
+        if (limitError && limitError.code !== 'PGRST116') {
+            console.warn('[Rate Limit Sync Warning] Table rate_limits may be missing or inaccessible:', limitError.message);
+        }
+
+        const now = new Date();
+        if (limitData) {
+            const lastAttempt = new Date(limitData.last_attempt_at);
+            const diff = now.getTime() - lastAttempt.getTime();
+
+            if (diff < COOLDOWN_MS) {
+                const remaining = Math.ceil((COOLDOWN_MS - diff) / 1000);
+                return res.status(429).json({
+                    error: `Registration rate limit: please wait ${remaining} seconds before trying again.`,
+                    retryAfter: remaining
+                });
+            }
+        }
+
+        // Record/Update attempt in DB
+        await supabase.from('rate_limits').upsert({
+            key,
+            last_attempt_at: now.toISOString(),
+            count: limitData ? limitData.count + 1 : 1
+        });
 
         if (!pin || pin.length !== 4) {
             return res.status(400).json({ error: 'A 4-digit security PIN is required' });
