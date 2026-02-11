@@ -32,6 +32,8 @@ export default function AIPairPage() {
         history,
         personality,
         setPersonality,
+        selectedLanguage,
+        setLanguage,
         addMessage,
         pairWithAI,
         suggestions,
@@ -39,9 +41,30 @@ export default function AIPairPage() {
     } = useAIStore();
 
     const [input, setInput] = useState('');
-    const [currentCode, setCurrentCode] = useState('// Your neural workspace is ready.\n// Start typing or ask the AI to generate code.\n\nfn main() {\n    println!("Hello, Neural World!");\n}');
+    const [currentCode, setCurrentCode] = useState('');
     const [pendingSuggestion, setPendingSuggestion] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+
+    const languages = [
+        { id: 'typescript', name: 'TypeScript', icon: 'TS', boilerplate: '// TypeScript Neural Workspace\n\nfunction main() {\n  console.log("Hello, Sunder!");\n}\n\nmain();' },
+        { id: 'rust', name: 'Rust', icon: 'RS', boilerplate: '// Rust Neural Workspace\n\nfn main() {\n    println!("Hello, Sunder!");\n}' },
+        { id: 'python', name: 'Python', icon: 'PY', boilerplate: '# Python Neural Workspace\n\ndef main():\n    print("Hello, Sunder!")\n\nif __name__ == "__main__":\n    main()' },
+        { id: 'go', name: 'Go', icon: 'GO', boilerplate: '// Go Neural Workspace\n\npackage main\n\nimport "fmt"\n\nfunction main() {\n    fmt.Println("Hello, Sunder!")\n}' }
+    ];
+
+    useEffect(() => {
+        if (!currentCode) {
+            const lang = languages.find(l => l.id === selectedLanguage) || languages[0];
+            setCurrentCode(lang.boilerplate);
+        }
+    }, []);
+
+    const handleNewFile = () => {
+        const lang = languages.find(l => l.id === selectedLanguage) || languages[0];
+        setCurrentCode(lang.boilerplate);
+        setPendingSuggestion(null);
+        addMessage('assistant', `Acknowledged. Initialized new ${lang.name} workspace for you.`);
+    };
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -96,14 +119,14 @@ export default function AIPairPage() {
 
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide no-scrollbar w-full sm:w-auto">
                         <div className="flex items-center p-1 bg-slate-900/50 border border-white/5 rounded-2xl shrink-0">
-                            {['helpful', 'educational'].map((p) => (
+                            {['helpful', 'educational', 'critical', 'concise'].map((p) => (
                                 <button
                                     key={p}
                                     onClick={() => setPersonality(p as any)}
                                     className={cn(
-                                        "px-3 md:px-4 py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
+                                        "px-2.5 md:px-3 py-1.5 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all",
                                         personality === p
-                                            ? "bg-violet-600 text-white shadow-lg"
+                                            ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
                                             : "text-slate-500 hover:text-slate-300"
                                     )}
                                 >
@@ -111,7 +134,25 @@ export default function AIPairPage() {
                                 </button>
                             ))}
                         </div>
+                        <div className="flex items-center p-1 bg-slate-900/50 border border-white/5 rounded-2xl shrink-0 ml-2">
+                            <select
+                                value={selectedLanguage}
+                                onChange={(e) => setLanguage(e.target.value)}
+                                className="bg-transparent border-none text-[8px] md:text-[9px] font-black uppercase tracking-widest text-violet-400 outline-none px-2 cursor-pointer"
+                            >
+                                {languages.map(lang => (
+                                    <option key={lang.id} value={lang.id} className="bg-slate-900 text-white lowercase capitalize">{lang.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="h-8 w-px bg-white/5 mx-1 md:mx-2 hidden sm:block" />
+                        <button
+                            onClick={handleNewFile}
+                            className="p-2 md:p-3 rounded-2xl bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all shrink-0 flex items-center gap-2 group"
+                        >
+                            <FileCode size={16} className="md:w-[18px] md:h-[18px] group-hover:text-emerald-400" />
+                            <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">New File</span>
+                        </button>
                         <button className="p-2 md:p-3 rounded-2xl bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all shrink-0">
                             <History size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>

@@ -40,6 +40,7 @@ import { cn, fetchApi, formatRelativeTime } from '@/lib/utils';
 import { useEditorStore } from '@/store/editorStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { useAIStore } from '@/store/aiStore';
 import { Markdown } from '@/components/Markdown';
 
 export default function SnippetEditor() {
@@ -59,6 +60,7 @@ export default function SnippetEditor() {
         setIsRunning
     } = useEditorStore();
     const { addToast } = useUIStore();
+    const { selectedLanguage, setLanguage } = useAIStore();
 
     const [isSaving, setIsSaving] = useState(false);
     const [description, setDescription] = useState('');
@@ -140,7 +142,8 @@ export default function SnippetEditor() {
                 body: JSON.stringify({
                     code: currentSnippet.code,
                     task: prompt,
-                    personality: 'expert programmer',
+                    language: currentSnippet.language,
+                    personality: 'educational', // Use educational for companion
                     options: { suggest_improvements: true, explain_changes: true }
                 })
             });
@@ -194,6 +197,21 @@ export default function SnippetEditor() {
         }
     };
 
+    const handleNewSnippet = () => {
+        resetEditor();
+        setAiResponse(null);
+        setHistory([]);
+        addToast({ title: "New Snippet", message: "Editor reset for new creation.", type: "success" });
+    };
+
+    const languages = [
+        { id: 'typescript', name: 'TypeScript' },
+        { id: 'javascript', name: 'JavaScript' },
+        { id: 'rust', name: 'Rust' },
+        { id: 'python', name: 'Python' },
+        { id: 'go', name: 'Go' },
+        { id: 'ruby', name: 'Ruby' }
+    ];
     const handleSave = async () => {
         if (!user) {
             router.push('/auth/login');
@@ -250,48 +268,59 @@ export default function SnippetEditor() {
                             type="text"
                             value={currentSnippet.title}
                             onChange={(e) => updateTitle(e.target.value)}
-                            className="bg-transparent text-white font-bold text-sm focus:outline-none w-32 sm:w-64 border-b border-transparent focus:border-violet-500/50 transition-all placeholder:text-slate-600 truncate"
-                            placeholder="Untitled"
+                            className="bg-transparent border-none text-sm font-bold text-white focus:outline-none placeholder:text-slate-600 w-48 lg:w-64"
+                            placeholder="Untilted Snippet"
                         />
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
-                        <CheckCircle2 size={12} /> Auto-saved
+                <div className="flex items-center gap-2 md:gap-4">
+                    <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/5 rounded-xl">
+                        <select
+                            value={currentSnippet.language}
+                            onChange={(e) => {
+                                updateLanguage(e.target.value);
+                                setLanguage(e.target.value);
+                            }}
+                            className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-violet-400 outline-none cursor-pointer"
+                        >
+                            {languages.map(lang => (
+                                <option key={lang.id} value={lang.id} className="bg-slate-900 text-white lowercase capitalize">{lang.name}</option>
+                            ))}
+                        </select>
                     </div>
-                    <div className="hidden md:block h-4 w-px bg-white/10 mx-1 sm:mx-2" />
-                    <button
-                        onClick={() => togglePane('left')}
-                        className={cn(
-                            "p-2 rounded-lg transition-colors",
-                            panes.left ? "text-violet-400 bg-violet-400/10" : "text-slate-500 hover:text-white"
-                        )}
-                        title="Toggle Explorer"
-                    >
-                        <Columns size={18} />
+
+                    <div className="h-6 w-px bg-white/5 hidden md:block" />
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleNewSnippet}
+                            className="px-3 md:px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                        >
+                            <RotateCcw size={14} className="md:w-4 md:h-4" />
+                            <span className="hidden lg:inline">New</span>
+                        </button>
+
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="px-4 md:px-6 py-2 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-violet-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
+                        >
+                            <Save size={14} className="md:w-4 md:h-4" />
+                            <span className="hidden lg:inline">{isSaving ? 'Saving...' : 'Save Snippet'}</span>
+                        </button>
+                    </div>
+
+                    <div className="h-6 w-px bg-white/5 hidden md:block" />
+
+                    <button className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-colors">
+                        <Share2 size={18} />
                     </button>
-                    <button
-                        onClick={() => togglePane('right')}
-                        className={cn(
-                            "p-2 rounded-lg transition-colors",
-                            panes.right ? "text-blue-400 bg-blue-400/10" : "text-slate-500 hover:text-white"
-                        )}
-                        title="Toggle Preview"
-                    >
-                        <Layout size={18} />
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="ml-1 sm:ml-2 px-3 sm:px-4 py-1.5 bg-violet-600 hover:bg-violet-550 text-white text-xs font-black rounded-lg transition-all shadow-lg shadow-violet-600/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50"
-                    >
-                        {isSaving ? <RotateCcw size={14} className="animate-spin" /> : <Save size={14} />}
-                        <span className="hidden sm:inline">{isSaving ? 'Saving' : 'Save'}</span>
+                    <button className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-colors">
+                        <Settings size={18} />
                     </button>
                 </div>
             </header>
-
             <div className="flex-1 flex overflow-hidden">
                 {/* Left Sidebar */}
                 <AnimatePresence>
