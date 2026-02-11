@@ -22,7 +22,7 @@ import {
     Cloud,
     AlertTriangle
 } from 'lucide-react';
-import { fetchApi } from '@/lib/utils';
+import { cn, fetchApi } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function SettingsPage() {
