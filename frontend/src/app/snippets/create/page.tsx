@@ -122,25 +122,27 @@ export default function SnippetEditor() {
         addToast({ title: "Neural Link", message: "Processing your request...", type: "info" });
 
         try {
-            const result = await fetchApi('/ai/explain', {
+            const result = await fetchApi('/ai/pair', {
                 method: 'POST',
                 body: JSON.stringify({
                     code: currentSnippet.code,
-                    detail_level: 'proactive',
-                    prompt: prompt
+                    task: prompt,
+                    personality: 'expert programmer',
+                    options: { suggest_improvements: true, explain_changes: true }
                 })
             });
 
-            setExecutionResult(`${executionResult || ''}\n\n> NEURAL ENGINE:\n${result.explanation}`);
+            const content = result.response || result.explanation || '';
+            setExecutionResult(`${executionResult || ''}\n\n> NEURAL ENGINE:\n${content}`);
 
             // Extract code block if present
-            const codeMatch = result.explanation.match(/```[\w]*\n([\s\S]*?)```/);
+            const codeMatch = content.match(/```[\w]*\n([\s\S]*?)```/);
             setAiResponse({
-                text: result.explanation.replace(/```[\s\S]*?```/g, '').trim(),
-                code: codeMatch ? codeMatch[1].trim() : undefined
+                text: content.replace(/```[\s\S]*?```/g, '').trim(),
+                code: codeMatch ? codeMatch[1].trim() : (result.suggested_code || undefined)
             });
 
-            addToast({ title: "Analysis Complete", message: "Check the companion for insights.", type: "success" });
+            addToast({ title: "Neural Response", message: "Companion updated with insights.", type: "success" });
         } catch (error) {
             addToast({ title: "AI Error", message: "Failed to reach neural engine", type: "error" });
         }
@@ -339,8 +341,11 @@ export default function SnippetEditor() {
                 {panes.left && (
                     <div
                         onMouseDown={() => setIsResizingLeft(true)}
-                        className="hidden md:block w-1 hover:w-1.5 h-full bg-white/5 hover:bg-violet-500/50 cursor-col-resize z-50 transition-all active:bg-violet-500"
-                    />
+                        className="hidden md:flex relative w-1 items-center justify-center hover:bg-violet-500/50 cursor-col-resize z-50 transition-all active:bg-violet-500 group"
+                    >
+                        <div className="absolute inset-y-0 -left-2 -right-2 z-0" />
+                        <div className="w-px h-8 bg-white/20 group-hover:bg-white/40" />
+                    </div>
                 )}
 
                 {/* Editor Area */}
@@ -371,33 +376,36 @@ export default function SnippetEditor() {
                             <div className="absolute top-0 left-0 w-12 h-full bg-white/[0.01] pointer-events-none border-r border-white/5 z-10" />
                             <div className="h-full overflow-auto custom-scrollbar">
                                 <div className="relative min-h-full p-6 pl-16">
-                                    <div className="relative w-full h-full font-mono text-sm leading-relaxed">
-                                        <pre
-                                            className={cn(`language-${currentSnippet.language.toLowerCase()} !bg-transparent !m-0 !p-0 pointer-events-none absolute inset-0 z-0 whitespace-pre-wrap break-all`)}
-                                            aria-hidden="true"
-                                            style={{ margin: 0, padding: 0, border: 'none' }}
-                                        >
-                                            <code
-                                                className={`language-${currentSnippet.language.toLowerCase()} !bg-transparent !p-0 !m-0 font-mono text-sm leading-relaxed`}
-                                                style={{ fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit' }}
+                                    <div className="grid w-full h-full font-mono text-sm leading-relaxed" style={{ gridTemplateColumns: '1fr' }}>
+                                        <div className="col-start-1 row-start-1 relative">
+                                            <pre
+                                                className={cn(`language-${currentSnippet.language.toLowerCase()} !bg-transparent !m-0 !p-0 pointer-events-none z-0 whitespace-pre-wrap break-all w-full h-full`)}
+                                                aria-hidden="true"
+                                                style={{ margin: 0, padding: 0, border: 'none' }}
                                             >
-                                                {currentSnippet.code + (currentSnippet.code.endsWith('\n') ? ' ' : '')}
-                                            </code>
-                                        </pre>
-                                        <textarea
-                                            className="absolute inset-0 w-full h-full bg-transparent m-0 p-0 font-mono text-sm leading-relaxed text-transparent caret-white resize-none focus:outline-none selection:bg-violet-500/30 whitespace-pre-wrap border-none outline-none z-10"
-                                            value={currentSnippet.code}
-                                            onChange={(e) => updateCode(e.target.value)}
-                                            spellCheck={false}
-                                            style={{
-                                                height: '100%',
-                                                minHeight: '100%',
-                                                WebkitTextFillColor: 'transparent',
-                                                fontFamily: 'inherit',
-                                                fontSize: 'inherit',
-                                                lineHeight: 'inherit'
-                                            }}
-                                        />
+                                                <code
+                                                    className={`language-${currentSnippet.language.toLowerCase()} !bg-transparent !p-0 !m-0 font-mono text-sm leading-relaxed block`}
+                                                    style={{ fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit' }}
+                                                >
+                                                    {currentSnippet.code + (currentSnippet.code.endsWith('\n') ? ' ' : '')}
+                                                </code>
+                                            </pre>
+                                            <textarea
+                                                className="absolute inset-0 w-full h-full bg-transparent m-0 p-0 font-mono text-sm leading-relaxed text-transparent caret-white resize-none focus:outline-none selection:bg-violet-500/30 whitespace-pre-wrap border-none outline-none z-10"
+                                                value={currentSnippet.code}
+                                                onChange={(e) => updateCode(e.target.value)}
+                                                spellCheck={false}
+                                                style={{
+                                                    height: '100%',
+                                                    minHeight: '100%',
+                                                    WebkitTextFillColor: 'transparent',
+                                                    fontFamily: 'inherit',
+                                                    fontSize: 'inherit',
+                                                    lineHeight: 'inherit',
+                                                    overflow: 'hidden'
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -408,8 +416,11 @@ export default function SnippetEditor() {
                     {panes.bottom && (
                         <div
                             onMouseDown={() => setIsResizingBottom(true)}
-                            className="h-1 hover:h-1.5 w-full bg-white/5 hover:bg-violet-500/50 cursor-row-resize z-50 transition-all active:bg-violet-500"
-                        />
+                            className="relative h-1 w-full flex items-center justify-center hover:bg-violet-500/50 cursor-row-resize z-50 transition-all active:bg-violet-500 group"
+                        >
+                            <div className="absolute inset-x-0 -top-2 -bottom-2 z-0" />
+                            <div className="h-px w-8 bg-white/20 group-hover:bg-white/40" />
+                        </div>
                     )}
 
                     {/* Bottom Pane Toggle */}
@@ -511,8 +522,11 @@ export default function SnippetEditor() {
                 {panes.right && (
                     <div
                         onMouseDown={() => setIsResizingRight(true)}
-                        className="hidden md:block w-1 hover:w-1.5 h-full bg-white/5 hover:bg-blue-500/50 cursor-col-resize z-50 transition-all active:bg-blue-500"
-                    />
+                        className="hidden md:flex relative w-1 items-center justify-center hover:bg-blue-500/50 cursor-col-resize z-50 transition-all active:bg-blue-500 group"
+                    >
+                        <div className="absolute inset-y-0 -left-2 -right-2 z-0" />
+                        <div className="w-px h-8 bg-white/20 group-hover:bg-white/40" />
+                    </div>
                 )}
 
                 {/* Right Sidebar */}
