@@ -377,7 +377,7 @@ export default function SnippetEditor() {
                                         onKeyDown={(e) => e.key === 'Enter' && handleAIExecute()}
                                     />
                                     <button
-                                        onClick={handleAIExecute}
+                                        onClick={() => handleAIExecute()}
                                         className="px-4 py-2 bg-violet-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-violet-550 transition-all shadow-lg shadow-violet-600/20"
                                     >
                                         Execute
