@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { fetchApi } from '@/lib/utils';
 
+// ... (interface stays same)
 interface AIState {
     isProcessing: boolean;
     history: any[];
@@ -18,8 +20,6 @@ interface AIState {
     generateCode: (prompt: string, language: string, framework: string) => Promise<any>;
     explainCode: (code: string, detailLevel: string) => Promise<any>;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export const useAIStore = create<AIState>((set) => ({
     isProcessing: false,
@@ -42,16 +42,10 @@ export const useAIStore = create<AIState>((set) => ({
     translate: async (code: string, sourceLang: string, targetLang: string) => {
         set({ isProcessing: true });
         try {
-            const response = await fetch(`${API_URL}/ai/translate`, {
+            const data = await fetchApi('/ai/translate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('sunder-auth-token')}`
-                },
                 body: JSON.stringify({ code, source_language: sourceLang, target_language: targetLang }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Translation failed');
             set({ isProcessing: false });
             return data;
         } catch (error) {
@@ -62,16 +56,10 @@ export const useAIStore = create<AIState>((set) => ({
     generateCode: async (prompt: string, language: string, framework: string) => {
         set({ isProcessing: true });
         try {
-            const response = await fetch(`${API_URL}/ai/generate`, {
+            const data = await fetchApi('/ai/generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('sunder-auth-token')}`
-                },
                 body: JSON.stringify({ prompt, language, framework }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Generation failed');
             set({ isProcessing: false });
             return data;
         } catch (error) {
@@ -82,16 +70,10 @@ export const useAIStore = create<AIState>((set) => ({
     explainCode: async (code: string, detailLevel: string) => {
         set({ isProcessing: true });
         try {
-            const response = await fetch(`${API_URL}/ai/explain`, {
+            const data = await fetchApi('/ai/explain', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('sunder-auth-token')}`
-                },
                 body: JSON.stringify({ code, detail_level: detailLevel }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Explanation failed');
             set({ isProcessing: false });
             return data;
         } catch (error) {
