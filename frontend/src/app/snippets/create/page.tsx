@@ -75,17 +75,29 @@ export default function SnippetEditor() {
     const [isResizingBottom, setIsResizingBottom] = useState(false);
 
     useEffect(() => {
+        // Hide sidebars on mobile by default
+        const isMobile = window.innerWidth < 1024;
+        if (isMobile) {
+            if (panes.left) togglePane('left');
+            if (panes.right) togglePane('right');
+        }
+    }, []);
+
+    useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (isResizingLeft) {
-                const newWidth = Math.max(160, Math.min(480, e.clientX));
+                const maxW = Math.min(480, window.innerWidth * 0.4);
+                const newWidth = Math.max(160, Math.min(maxW, e.clientX));
                 setLeftWidth(newWidth);
             }
             if (isResizingRight) {
-                const newWidth = Math.max(240, Math.min(600, window.innerWidth - e.clientX));
+                const maxW = Math.min(600, window.innerWidth * 0.5);
+                const newWidth = Math.max(240, Math.min(maxW, window.innerWidth - e.clientX));
                 setRightWidth(newWidth);
             }
             if (isResizingBottom) {
-                const newHeight = Math.max(120, Math.min(600, window.innerHeight - e.clientY));
+                const maxH = Math.min(600, window.innerHeight * 0.6);
+                const newHeight = Math.max(120, Math.min(maxH, window.innerHeight - e.clientY));
                 setBottomHeight(newHeight);
             }
         };
@@ -244,10 +256,10 @@ export default function SnippetEditor() {
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
+                    <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
                         <CheckCircle2 size={12} /> Auto-saved
                     </div>
-                    <div className="h-4 w-px bg-white/10 mx-1 sm:mx-2" />
+                    <div className="hidden md:block h-4 w-px bg-white/10 mx-1 sm:mx-2" />
                     <button
                         onClick={() => togglePane('left')}
                         className={cn(

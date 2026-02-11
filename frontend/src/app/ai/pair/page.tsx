@@ -232,10 +232,10 @@ export default function AIPairPage() {
                                 {history.map((msg, i) => (
                                     <div key={i} className="space-y-1 md:space-y-2">
                                         <div className={cn(
-                                            "p-3 md:p-4 rounded-xl md:rounded-2xl text-[11px] md:text-xs font-medium leading-relaxed",
+                                            "p-3 md:p-4 rounded-xl md:rounded-2xl text-[11px] md:text-xs font-medium leading-relaxed whitespace-pre-wrap",
                                             msg.role === 'user'
                                                 ? "bg-white/5 border border-white/10 text-white rounded-br-none"
-                                                : "bg-violet-600/10 border border-violet-500/20 text-slate-300 rounded-tl-none"
+                                                : "bg-violet-600/10 border border-violet-500/20 text-slate-300 rounded-tl-none font-sans"
                                         )}>
                                             {msg.content}
                                         </div>
