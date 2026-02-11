@@ -1,23 +1,32 @@
 'use client';
 
-import { Search, Bell, Command } from 'lucide-react';
+import { Search, Bell, Command, Menu } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 
 export default function Navbar() {
     const { user } = useAuthStore();
+    const { mobileMenuOpen, toggleMobileMenu } = useUIStore();
     const initials = user?.display_name
         ? user.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
         : user?.username?.slice(0, 2).toUpperCase() || '??';
 
     return (
-        <header className="h-20 glass border-b border-white/10 flex items-center justify-between px-8 z-40">
+        <header className="h-20 glass border-b border-white/10 flex items-center justify-between px-4 md:px-8 z-40">
+            <button
+                onClick={toggleMobileMenu}
+                className="lg:hidden p-2 hover:bg-white/5 rounded-xl text-slate-400 mr-2 transition-all active:scale-95"
+            >
+                <Menu size={24} />
+            </button>
+
             <div className="flex-1 max-w-xl">
                 <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-500 transition-colors" size={18} />
+                    <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-500 transition-colors" size={16} />
                     <input
                         type="text"
-                        placeholder="Search snippets, people, organizations..."
-                        className="w-full pl-12 pr-12 py-3 bg-slate-900/50 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                        placeholder="Search..."
+                        className="w-full pl-10 md:pl-12 pr-4 md:pr-12 py-2.5 md:py-3 bg-slate-900/50 border border-white/5 rounded-2xl text-xs md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-slate-600"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg border border-white/10 text-[10px] text-slate-500">
                         <Command size={10} />

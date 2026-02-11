@@ -11,8 +11,10 @@ interface UIState {
     toasts: any[];
     commandPaletteOpen: boolean;
     loadingOverlay: boolean;
+    mobileMenuOpen: boolean;
     toggleTheme: () => void;
     toggleSidebar: () => void;
+    toggleMobileMenu: () => void;
     addNotification: (notification: any) => void;
     openModal: (name: string, props?: any) => void;
     closeModal: () => void;
@@ -30,8 +32,10 @@ export const useUIStore = create<UIState>((set) => ({
     toasts: [],
     commandPaletteOpen: false,
     loadingOverlay: false,
+    mobileMenuOpen: false,
     toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+    toggleMobileMenu: () => set((state) => ({ mobileMenuOpen: !state.mobileMenuOpen })),
     addNotification: (notification: any) => set((state) => ({
         notifications: [...state.notifications, notification]
     })),
