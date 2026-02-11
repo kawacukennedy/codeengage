@@ -70,6 +70,30 @@ export default function SnippetEditor() {
         Prism.highlightAll();
     }, [currentSnippet.code, currentSnippet.language]);
 
+    const handleAIExecute = async (customPrompt?: string) => {
+        const prompt = customPrompt || aiInput;
+        if (!prompt.trim() && !customPrompt) return;
+
+        setAiInput('');
+        addToast({ title: "Neural Link", message: "Processing your request...", type: "info" });
+
+        try {
+            const result = await fetchApi('/ai/explain', {
+                method: 'POST',
+                body: JSON.stringify({
+                    code: currentSnippet.code,
+                    detail_level: 'proactive',
+                    prompt: prompt
+                })
+            });
+
+            setExecutionResult((prev) => `${prev}\n\n> NEURAL ENGINE:\n${result.explanation}`);
+            addToast({ title: "Analysis Complete", message: "Check the console for insights.", type: "success" });
+        } catch (error) {
+            addToast({ title: "AI Error", message: "Failed to reach neural engine", type: "error" });
+        }
+    };
+
     const handleRun = async () => {
         setIsRunning(true);
         setExecutionResult('> Compiling and preparing runtime...\n');
@@ -268,23 +292,27 @@ export default function SnippetEditor() {
                                 {currentSnippet.language}
                             </div>
                         </div>
-                        <div className="flex-1 relative overflow-auto custom-scrollbar group">
+                        <div className="flex-1 relative overflow-hidden group">
                             <div className="absolute top-0 left-0 w-12 h-full bg-white/[0.01] pointer-events-none border-r border-white/5 z-10" />
-                            <div className="relative min-h-full font-mono text-sm leading-relaxed p-6 pl-16">
-                                <pre
-                                    className={cn(`language-${currentSnippet.language.toLowerCase()} !bg-transparent !m-0 !p-0 pointer-events-none absolute inset-0 p-6 pl-16`)}
-                                    aria-hidden="true"
-                                >
-                                    <code className={`language-${currentSnippet.language.toLowerCase()} !bg-transparent`}>
-                                        {currentSnippet.code + (currentSnippet.code.endsWith('\n') ? ' ' : '')}
-                                    </code>
-                                </pre>
-                                <textarea
-                                    className="absolute inset-0 w-full h-full bg-transparent p-6 pl-16 font-mono text-sm leading-relaxed text-transparent caret-white resize-none focus:outline-none selection:bg-violet-500/30 overflow-hidden whitespace-pre border-none outline-none"
-                                    value={currentSnippet.code}
-                                    onChange={(e) => updateCode(e.target.value)}
-                                    spellCheck={false}
-                                />
+                            <div className="h-full overflow-auto custom-scrollbar">
+                                <div className="relative min-h-full font-mono text-sm leading-relaxed p-6 pl-16">
+                                    <pre
+                                        className={cn(`language-${currentSnippet.language.toLowerCase()} !bg-transparent !m-0 !p-0 pointer-events-none absolute inset-0 p-6 pl-16 z-0`)}
+                                        aria-hidden="true"
+                                        style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+                                    >
+                                        <code className={`language-${currentSnippet.language.toLowerCase()} !bg-transparent`}>
+                                            {currentSnippet.code + (currentSnippet.code.endsWith('\n') ? ' ' : '')}
+                                        </code>
+                                    </pre>
+                                    <textarea
+                                        className="absolute inset-0 w-full h-full bg-transparent p-6 pl-16 font-mono text-sm leading-relaxed text-transparent caret-white resize-none focus:outline-none selection:bg-violet-500/30 whitespace-pre-wrap border-none outline-none z-10"
+                                        value={currentSnippet.code}
+                                        onChange={(e) => updateCode(e.target.value)}
+                                        spellCheck={false}
+                                        style={{ height: '100%', minHeight: '100%' }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </main>
@@ -322,6 +350,22 @@ export default function SnippetEditor() {
                                             </p>
                                         </div>
                                     </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                                        {[
+                                            { label: 'Optimize', icon: <Activity size={12} />, prompt: 'Optimize this code for performance and readability.' },
+                                            { label: 'Debug', icon: <AlertCircle size={12} />, prompt: 'Find potential bugs or edge cases in this code.' },
+                                            { label: 'Explain', icon: <MessageSquare size={12} />, prompt: 'Explain how this code works in detail.' },
+                                            { label: 'Docs', icon: <FileCode size={12} />, prompt: 'Generate JSDoc style documentation for this code.' }
+                                        ].map((action) => (
+                                            <button
+                                                key={action.label}
+                                                onClick={() => handleAIExecute(action.prompt)}
+                                                className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white hover:bg-violet-500/10 hover:border-violet-500/20 transition-all uppercase tracking-widest text-left"
+                                            >
+                                                {action.icon} {action.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="px-4 py-3 bg-black/40 border-t border-white/5 flex gap-4">
                                     <input
@@ -330,8 +374,14 @@ export default function SnippetEditor() {
                                         className="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-2 text-xs focus:outline-none"
                                         value={aiInput}
                                         onChange={(e) => setAiInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAIExecute()}
                                     />
-                                    <button className="px-4 py-2 bg-violet-600 text-white rounded-xl text-xs font-black uppercase tracking-widest">Execute</button>
+                                    <button
+                                        onClick={handleAIExecute}
+                                        className="px-4 py-2 bg-violet-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-violet-550 transition-all shadow-lg shadow-violet-600/20"
+                                    >
+                                        Execute
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -364,9 +414,27 @@ export default function SnippetEditor() {
                                         <PanelRightClose size={14} />
                                     </button>
                                 </div>
-                                <div className="flex-1 p-6 flex flex-col gap-6">
-                                    <div className="flex-1 bg-slate-950 rounded-2xl border border-white/5 flex items-center justify-center p-8 text-center">
-                                        <Activity size={32} className="text-slate-700" />
+                                <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                                    <div className={cn(
+                                        "flex-1 bg-slate-950 rounded-2xl border flex flex-col items-center justify-center p-8 text-center transition-all duration-500",
+                                        executionResult ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/5"
+                                    )}>
+                                        {executionResult ? (
+                                            <div className="space-y-4 animate-in fade-in zoom-in duration-500">
+                                                <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto border border-emerald-500/20">
+                                                    <CheckCircle2 size={32} className="text-emerald-400" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-black text-white uppercase tracking-widest">Execution Complete</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Runtime environment released.</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4 opacity-50">
+                                                <Activity size={32} className="text-slate-700 animate-pulse mx-auto" />
+                                                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Standby for compilation</p>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="h-40 bg-slate-950 rounded-2xl border border-white/5 flex flex-col overflow-hidden">
                                         <div className="p-3 bg-black/40 border-b border-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
