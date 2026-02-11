@@ -80,24 +80,58 @@ const analyzeCode = (code) => {
     };
 };
 
+const axios = require('axios');
+
 /**
- * Simulated Gemini API call with option support.
+ * Real Gemini API call with option support.
  */
 const callGemini = async (prompt, options = {}, model = 'gemini-1.5-pro') => {
     const start = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    let response = `[AI Response using ${model}]\nProcessed based on: ${prompt.substring(0, 50)}...`;
+    if (!apiKey) {
+        throw new Error('GEMINI_API_KEY is not configured');
+    }
 
-    if (options.idiomatic) response += "\n\nNote: Applied idiomatic patterns for target language.";
-    if (options.preserve_comments) response += "\nNote: All original comments preserved.";
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+                contents: [
+                    {
+                        parts: [
+                            { text: prompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: options.temperature || 0.7,
+                    maxOutputTokens: options.max_tokens || 2048,
+                }
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
 
-    return {
-        text: response,
-        input_tokens: Math.floor(prompt.length / 4),
-        output_tokens: Math.floor(response.length / 4),
-        duration: Date.now() - start
-    };
+        const aiResponse = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!aiResponse) {
+            throw new Error('Invalid response from Gemini API');
+        }
+
+        return {
+            text: aiResponse,
+            input_tokens: Math.floor(prompt.length / 4), // Approximation if not provided by API
+            output_tokens: Math.floor(aiResponse.length / 4),
+            duration: Date.now() - start
+        };
+    } catch (error) {
+        console.error('Gemini API Error:', error.response?.data || error.message);
+        throw new Error(`AI processing failed: ${error.message}`);
+    }
 };
 
 module.exports = { logAIUsage, callGemini, analyzeCode, calculateCost };

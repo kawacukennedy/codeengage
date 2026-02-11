@@ -66,12 +66,18 @@ router.post('/translate', authenticate, async (req, res) => {
 router.post('/pair', authenticate, async (req, res) => {
     const { code, task, conversation_history, personality, options } = req.body;
     try {
-        const personaPrompt = personality ? `Act as a ${personality} expert programmer.` : 'Act as an expert pair programmer.';
-        const historyContext = conversation_history?.map(m => `${m.role}: ${m.content}`).join('\n') || '';
+        const personaPrompt = personality === 'educational'
+            ? 'Act as a world-class coding mentor. Explain the "why" behind every change and guide the user through best practices.'
+            : 'Act as an elite senior software engineer. Provide high-quality, production-ready code blocks and concise, actionable advice.';
 
-        const prompt = `${personaPrompt}\nHistory:\n${historyContext}\n\nTask: ${task}\n\nCode:\n${code}\n${options?.suggest_improvements ? 'Please suggest performance improvements.' : ''}`;
+        const historyContext = conversation_history?.map(m => `${m.role === 'user' ? 'Human' : 'AI'}: ${m.content}`).join('\n') || '';
 
-        const aiResponse = await callGemini(prompt, options);
+        const prompt = `${personaPrompt}\n\nContext:\nExisting Code:\n\`\`\`\n${code || '// No code provided'}\n\`\`\`\n\nConversation History:\n${historyContext}\n\nUser Task: ${task}\n\nProvide your response in clear Markdown. If you suggest code changes, always use fenced code blocks with the appropriate language identifier. ${options?.suggest_improvements ? 'Proactively identify and suggest performance or security optimizations.' : ''}`;
+
+        const aiResponse = await callGemini(prompt, {
+            ...options,
+            temperature: personality === 'educational' ? 0.7 : 0.2 // Lower temp for more deterministic code
+        });
 
         await logAIUsage({
             user_id: req.user.id,
