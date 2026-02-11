@@ -40,55 +40,70 @@ export default function CollaborationSession() {
     const [message, setMessage] = useState('');
     const [audioEnabled, setAudioEnabled] = useState(false);
     const [videoEnabled, setVideoEnabled] = useState(false);
-    const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+    const [socket, setSocket] = useState<WebSocket | null>(null);
 
     useEffect(() => {
+        if (!sessionToken) return;
+
         setConnectionStatus('connecting');
 
-        // Initial participants fetch or mock
-        setParticipants([
-            { user_id: user?.id, username: user?.username, role: 'host' },
-            { user_id: 'sarah-id', username: 'sarah_dev', role: 'reviewer' }
-        ]);
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // Fallback to localhost:5001 if API_URL is not set, matching backend config
+        const wsUrl = `${protocol}//${window.location.hostname}:5001/collaboration/${sessionToken}`;
+        const ws = new WebSocket(wsUrl);
 
-        const pollUpdates = async () => {
+        ws.onopen = () => {
+            console.log('[WS] Connected to Session');
+            setConnectionStatus('connected');
+            setParticipants(prev => {
+                if (prev.some(p => p.user_id === user?.id)) return prev;
+                return [...prev, { user_id: user?.id, username: user?.username, role: 'participant' }];
+            });
+        };
+
+        ws.onmessage = (event) => {
             try {
-                const data = await fetchApi(`/collaboration/sessions/${sessionToken}/updates${lastUpdate ? `?since=${lastUpdate}` : ''}`);
-                if (data.updates) {
-                    data.updates.forEach((msg: any) => addChatMessage(msg));
+                const data = JSON.parse(event.data);
+                if (data.type === 'chat') {
+                    addChatMessage(data);
+                } else if (data.type === 'sys') {
+                    console.info('[WS System]', data.message);
                 }
-                if (data.last_update) setLastUpdate(data.last_update);
-                setConnectionStatus('connected');
-            } catch (error) {
-                console.error('Failed to fetch updates:', error);
-                setConnectionStatus('disconnected');
+            } catch (err) {
+                console.error('[WS] Error parsing message', err);
             }
         };
 
-        const interval = setInterval(pollUpdates, 5000);
-        pollUpdates();
-
-        return () => {
-            clearInterval(interval);
+        ws.onclose = () => {
+            console.log('[WS] Disconnected');
             setConnectionStatus('disconnected');
         };
-    }, [sessionToken]);
+
+        ws.onerror = () => {
+            setConnectionStatus('error');
+        };
+
+        setSocket(ws);
+
+        return () => {
+            ws.close();
+        };
+    }, [sessionToken, user?.id]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!message.trim()) return;
+        if (!message.trim() || !socket || socket.readyState !== WebSocket.OPEN) return;
 
-        const newMsg = {
+        const payload = {
+            type: 'chat',
             user: user?.display_name || user?.username || 'Anonymous',
             text: message,
             userId: user?.id
         };
 
-        addChatMessage(newMsg);
+        socket.send(JSON.stringify(payload));
+        addChatMessage(payload); // Add locally for immediate feedback
         setMessage('');
-
-        // In a real app, this would POST to a message endpoint
-        // For now, it updates local store which is then synced via polling (if others also send)
     };
 
     return (

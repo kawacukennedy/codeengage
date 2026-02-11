@@ -90,7 +90,7 @@ export default function LeaderboardPage() {
         queryFn: () => fetchApi('/leaderboard') // timeframe filtering can be added to backend later
     });
 
-    const displayRanks = leaderboardData || [];
+    const displayRanks = leaderboardData?.rankings || [];
     const { user } = useAuthStore();
 
     return (

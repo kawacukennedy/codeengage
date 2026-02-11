@@ -62,6 +62,7 @@ app.use('/api/snippets', rateLimiter(100, 60 * 1000), require('./routes/snippets
 app.use('/api/collaboration', require('./routes/collaboration'));
 app.use('/api/organizations', require('./routes/organizations'));
 app.use('/api/learning', require('./routes/learning'));
+app.use('/api/challenges', require('./routes/challenges'));
 app.use('/api/profiles', require('./routes/profiles'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/admin', rateLimiter(1000, 60 * 1000), require('./routes/admin').router);
@@ -98,6 +99,12 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(PORT, () => {
+const http = require('http');
+const server = http.createServer(app);
+const { initWebSocket } = require('./lib/websocket');
+
+initWebSocket(server);
+
+server.listen(PORT, () => {
     console.log(`Sunder Backend listening on port ${PORT}`);
 });

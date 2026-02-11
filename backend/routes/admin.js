@@ -183,4 +183,33 @@ router.post('/system/backups', authenticate, adminOnly, async (req, res) => {
     }
 });
 
+// Suspend/Unsuspend User
+router.patch('/users/:id/status', authenticate, adminOnly, async (req, res) => {
+    const { is_suspended } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update({ is_suspended, updated_at: new Date() })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete Snippet (Admin)
+router.delete('/snippets/:id', authenticate, adminOnly, async (req, res) => {
+    try {
+        const { error } = await supabase.from('snippets').delete().eq('id', req.params.id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = { router, adminOnly };

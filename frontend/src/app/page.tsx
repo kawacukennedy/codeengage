@@ -12,7 +12,11 @@ import {
   ChevronRight,
   Star,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Zap80,
+  Fingerprint,
+  Radio,
+  Infinity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -65,7 +69,15 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 selection:bg-violet-500/30">
+    <main className="min-h-screen bg-[#020617] selection:bg-violet-500/30 overflow-x-hidden">
+      {/* Background Cinematic Elements */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-violet-600/20 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      </div>
       {/* Navigation Overlay */}
       <nav className={cn(
         "fixed top-0 left-0 w-full z-50 transition-all duration-300 px-4 md:px-8 py-4 md:py-6",
@@ -91,56 +103,44 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-40 pb-20 px-8 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] opacity-20 pointer-events-none">
-          <div className="absolute top-[10%] left-[20%] w-[40%] h-[40%] bg-violet-600 blur-[120px] rounded-full opacity-30 animate-pulse" />
-          <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] bg-blue-600 blur-[120px] rounded-full opacity-30 animate-pulse" />
-        </div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center space-y-8 max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-400 text-[10px] font-black uppercase tracking-widest animate-fade-in">
-              <Zap size={12} fill="currentColor" /> Next Gen Intelligence v2.0 is Live
+      <section className="relative pt-48 pb-32 px-8 overflow-hidden z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center space-y-12 max-w-5xl mx-auto">
+            <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-[10px] font-black uppercase tracking-[0.3em] backdrop-blur-xl animate-fade-in shadow-2xl">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Neural Engine v4.0.2 Deployment Successful
             </div>
-            <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter uppercase italic leading-[0.9] animate-slide-up">
-              Code at the <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-blue-400 to-emerald-400">Speed of AI.</span>
+
+            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black text-white tracking-tight uppercase italic leading-[0.85] animate-reveal">
+              Rewrite <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-white/80 to-white/20">The Void.</span>
             </h1>
-            <p className="text-lg md:text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed animate-fade-in delay-200">
-              The collaborative engineering platform for the modern era. Share snippets, collaborate in real-time, and leverage advanced Gemini-powered intelligence.
+
+            <p className="text-xl md:text-2xl text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed animate-fade-in delay-500">
+              The apex ecosystem for high-velocity engineering. <br className="hidden md:block" />
+              Sunder collapses the distance between <span className="text-white font-black italic">Thought</span> and <span className="text-white font-black italic">Execution</span>.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6 animate-fade-in delay-300">
-              <Link href="/dashboard" className="w-full sm:w-auto px-10 py-5 bg-violet-600 hover:bg-violet-550 text-white font-black rounded-2xl transition-all shadow-2xl shadow-violet-600/30 uppercase tracking-widest text-sm flex items-center justify-center gap-3">
-                Get Started Free <ChevronRight size={20} />
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 pt-8 animate-fade-in delay-700">
+              <Link href="/dashboard" className="group relative w-full sm:w-auto">
+                <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200" />
+                <div className="relative px-12 py-6 bg-slate-950 text-white font-black rounded-2xl transition-all border border-white/10 uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4">
+                  Initialize Terminal <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </div>
               </Link>
-              <Link href="/snippets" className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 text-white font-black rounded-2xl transition-all uppercase tracking-widest text-sm flex items-center justify-center gap-3">
-                View Marketplace
+              <Link href="/snippets" className="w-full sm:w-auto px-12 py-6 glass hover:bg-white/10 text-white font-black rounded-2xl transition-all uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4 border border-white/5">
+                Scan Marketplace
               </Link>
             </div>
           </div>
 
-          {/* AI Demo Section */}
-          <div className="mt-16 md:mt-24 max-w-5xl mx-auto glass p-2 md:p-3 rounded-3xl md:rounded-[48px] border border-white/10 shadow-3xl transform hover:scale-[1.02] transition-all group">
-            <div className="bg-slate-900 rounded-2xl md:rounded-[40px] overflow-hidden border border-white/5 aspect-video md:aspect-[21/9] flex flex-col">
-              <div className="px-6 py-4 bg-slate-950/50 border-b border-white/5 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/20" />
-                  <div className="w-3 h-3 rounded-full bg-amber-500/20" />
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/20" />
-                </div>
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sunder Pair Assistant</div>
-                <div className="w-8 h-8 rounded-lg bg-white/5" />
-              </div>
-              <div className="flex-1 p-8 font-mono text-sm md:text-base text-violet-400 flex flex-col justify-center">
-                <div className="overflow-hidden whitespace-nowrap border-r-2 border-violet-500 animate-typing w-[34ch] mb-4">
-                  $ sunder translate --to python "main.ts"
-                </div>
-                <div className="space-y-2 opacity-60 animate-fade-in delay-1000">
-                  <p className="text-slate-500"># Result from sunder-engine-3.5</p>
-                  <p className="text-emerald-400">def calculate_metrics(data):</p>
-                  <p className="pl-4 text-emerald-400">return sum(data) / len(data) if data else 0</p>
-                </div>
-              </div>
+          {/* Trusted By / Logos */}
+          <div className="mt-32 pt-20 border-t border-white/5 opacity-40">
+            <p className="text-center text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mb-12">Integrated with the Avant-Garde</p>
+            <div className="flex flex-wrap justify-center gap-16 md:gap-24 grayscale brightness-200">
+              {['Vercel', 'Supabase', 'OpenAI', 'Anthropic', 'Linear'].map(logo => (
+                <span key={logo} className="text-2xl font-black italic tracking-tighter text-white/50">{logo}</span>
+              ))}
             </div>
           </div>
         </div>

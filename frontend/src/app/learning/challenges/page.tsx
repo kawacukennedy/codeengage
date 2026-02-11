@@ -18,10 +18,16 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { fetchApi } from '@/lib/utils';
 
 export default function LearningChallenges() {
     const [filter, setFilter] = useState('All');
+
+    const { data: realChallenges, isLoading } = useQuery({
+        queryKey: ['challenges'],
+        queryFn: () => fetchApi('/challenges')
+    });
 
     const stats = [
         { label: 'Current Streak', value: '12 Days', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
@@ -29,39 +35,17 @@ export default function LearningChallenges() {
         { label: 'Sunder XP', value: '14,250', icon: Zap, color: 'text-violet-400', bg: 'bg-violet-400/10' },
     ];
 
-    const challenges = [
+    const displayChallenges = realChallenges || [
         {
             id: '1',
             title: 'Async Vortex Resolver',
             category: 'Systems',
-            difficulty: 'Expert',
+            difficulty: 'advanced',
             reward: '500 XP',
             timeLimit: '45m',
             participants: '1.2k',
             status: 'unlocked',
             description: 'Optimize a nested asynchronous queue manager with backpressure handling.'
-        },
-        {
-            id: '2',
-            title: 'UI Ghosting Fix',
-            category: 'Frontend',
-            difficulty: 'Intermediate',
-            reward: '250 XP',
-            timeLimit: '30m',
-            participants: '4.5k',
-            status: 'completed',
-            description: 'Fix race conditions in a complex React state management pattern.'
-        },
-        {
-            id: '3',
-            title: 'Neural Data Parser',
-            category: 'AI/ML',
-            difficulty: 'Advanced',
-            reward: '400 XP',
-            timeLimit: '60m',
-            participants: '800',
-            status: 'locked',
-            description: 'Implement an efficient stream parser for large-scale LLM output processing.'
         }
     ];
 
@@ -174,7 +158,7 @@ export default function LearningChallenges() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {challenges.map(challenge => (
+                        {displayChallenges.map((challenge: any) => (
                             <div key={challenge.id} className={cn(
                                 "glass rounded-[40px] border border-white/5 p-8 flex flex-col gap-6 transition-all duration-500 relative group overflow-hidden bg-slate-950/20",
                                 challenge.status === 'locked' ? "opacity-40 grayscale" : "hover:scale-[1.02] hover:border-orange-500/30",
@@ -183,8 +167,8 @@ export default function LearningChallenges() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
-                                            challenge.difficulty === 'Expert' ? "bg-red-500/10 text-red-500 border border-red-500/20" :
-                                                challenge.difficulty === 'Advanced' ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
+                                            challenge.difficulty?.toLowerCase() === 'advanced' ? "bg-red-500/10 text-red-500 border border-red-500/20" :
+                                                challenge.difficulty?.toLowerCase() === 'intermediate' ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
                                                     "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                                         )}>
                                             {challenge.difficulty}

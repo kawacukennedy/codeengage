@@ -21,11 +21,12 @@ import {
     Cloud,
     AlertTriangle
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { fetchApi } from '@/lib/utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function SettingsPage() {
     const [theme, setTheme] = useState('dark');
+    const queryClient = useQueryClient();
     const [notifications, setNotifications] = useState({
         email: true,
         push: false,
@@ -33,8 +34,34 @@ export default function SettingsPage() {
         newsletter: false
     });
 
+    const { data: apiKeys, isLoading: isLoadingKeys } = useQuery({
+        queryKey: ['api-keys'],
+        queryFn: () => fetchApi('/profiles/api-keys')
+    });
+
     const toggleNotification = (key: keyof typeof notifications) => {
         setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleGenerateKey = async () => {
+        try {
+            await fetchApi('/profiles/api-keys', {
+                method: 'POST',
+                body: JSON.stringify({ label: `Key ${new Date().toLocaleDateString()}` })
+            });
+            queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+        } catch (error) {
+            console.error('Failed to generate key', error);
+        }
+    };
+
+    const handleRevokeKey = async (keyId: string) => {
+        try {
+            await fetchApi(`/profiles/api-keys/${keyId}`, { method: 'DELETE' });
+            queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+        } catch (error) {
+            console.error('Failed to revoke key', error);
+        }
     };
 
     return (
@@ -180,7 +207,7 @@ export default function SettingsPage() {
                                 <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                                     <Languages size={28} />
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1" >
                                     <h3 className="text-lg font-black text-white uppercase italic tracking-widest">Global Language</h3>
                                     <p className="text-[10px] text-indigo-200/50 font-black uppercase tracking-[0.2em]">English (Digital Standard)</p>
                                 </div>
@@ -189,6 +216,57 @@ export default function SettingsPage() {
                                 Change Context
                             </button>
                         </div>
+
+                        {/* API Keys Section */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-4">
+                                <Key className="text-slate-500" size={18} />
+                                <h2 className="text-sm font-black text-white uppercase tracking-[0.2em]">API Protocol</h2>
+                            </div>
+
+                            <div className="p-8 rounded-[2rem] bg-slate-900/40 border border-white/5 backdrop-blur-xl space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-tight italic">Secrets & Integrations</h3>
+                                        <p className="text-[10px] text-slate-500 font-medium">Manage your cryptographic keys for API access.</p>
+                                    </div>
+                                    <button
+                                        onClick={handleGenerateKey}
+                                        className="px-6 py-2.5 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-violet-500/20"
+                                    >
+                                        Generate New Key
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {isLoadingKeys ? (
+                                        <div className="p-4 bg-white/5 rounded-xl animate-pulse h-16" />
+                                    ) : apiKeys?.length > 0 ? (
+                                        apiKeys.map((apiKey: any) => (
+                                            <div key={apiKey.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between group">
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{apiKey.label}</p>
+                                                    <code className="text-[10px] text-violet-400 bg-black/40 px-3 py-1 rounded-lg border border-white/5">
+                                                        {apiKey.key.replace(/(.{10}).*(.{4})/, '$1****************$2')}
+                                                    </code>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRevokeKey(apiKey.id)}
+                                                    className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                                                    title="Revoke Key"
+                                                >
+                                                    <Lock size={14} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No active protocols found</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>

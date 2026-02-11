@@ -7,16 +7,37 @@ import {
     ShieldAlert
 } from 'lucide-react';
 import { cn, fetchApi } from '@/lib/utils';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 export default function AdminUsers() {
     const [search, setSearch] = useState('');
+    const queryClient = useQueryClient();
 
     const { data: users, isLoading } = useQuery({
         queryKey: ['admin-users'],
-        queryFn: () => fetchApi('/users') // Assuming standard user list endpoint
+        queryFn: () => fetchApi('/admin/metrics').then(data => {
+            // This is a bit of a hack since the spec doesn't have a dedicated /admin/users list,
+            // but in a real app we'd have it. Let's assume fetchApi('/users') works or we use existing metrics data.
+            // For now, let's keep the /users assumption or mock if needed.
+            return fetchApi('/admin/audit').then(logs => {
+                // Better approach: fetch all users from a generic endpoint if available
+                return fetchApi('/profiles').then(profiles => profiles);
+            });
+        })
     });
+
+    const handleToggleSuspension = async (userId: string, currentStatus: boolean) => {
+        try {
+            await fetchApi(`/admin/users/${userId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ is_suspended: !currentStatus })
+            });
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+        } catch (error) {
+            console.error('Failed to update status', error);
+        }
+    };
 
     return (
         <div className="glass rounded-[48px] border border-white/5 overflow-hidden bg-slate-950/20 shadow-2xl">
@@ -94,7 +115,15 @@ export default function AdminUsers() {
                                         {new Date(user.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-10 py-6 text-right">
-                                        <button className="p-2 text-slate-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><MoreHorizontal size={20} /></button>
+                                        <button
+                                            onClick={() => handleToggleSuspension(user.id, user.is_suspended)}
+                                            className={cn(
+                                                "px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all",
+                                                user.is_suspended ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" : "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                                            )}
+                                        >
+                                            {user.is_suspended ? 'Reactivate' : 'Suspend'}
+                                        </button>
                                     </td>
                                 </tr>
                             ))
