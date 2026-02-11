@@ -55,7 +55,7 @@ export default function CollaborationSession() {
         ws.onopen = () => {
             console.log('[WS] Connected to Session');
             setConnectionStatus('connected');
-            setParticipants(prev => {
+            setParticipants((prev: any[]) => {
                 if (prev.some(p => p.user_id === user?.id)) return prev;
                 return [...prev, { user_id: user?.id, username: user?.username, role: 'participant' }];
             });

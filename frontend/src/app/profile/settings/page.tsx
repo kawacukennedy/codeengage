@@ -40,7 +40,7 @@ export default function SettingsPage() {
     });
 
     const toggleNotification = (key: keyof typeof notifications) => {
-        setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+        setNotifications((prev: any) => ({ ...prev, [key]: !prev[key] }));
     };
 
     const handleGenerateKey = async () => {

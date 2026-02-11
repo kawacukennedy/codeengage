@@ -9,7 +9,7 @@ interface CollaborationState {
     isRecording: boolean;
     recordingUrl: string | null;
     setSession: (token: string | null) => void;
-    setParticipants: (participants: any[]) => void;
+    setParticipants: (participants: any[] | ((prev: any[]) => any[])) => void;
     updateCursor: (userId: string, position: any) => void;
     setConnectionStatus: (status: 'connecting' | 'connected' | 'disconnected') => void;
     addChatMessage: (message: any) => void;
@@ -25,7 +25,9 @@ export const useCollaborationStore = create<CollaborationState>((set) => ({
     isRecording: false,
     recordingUrl: null,
     setSession: (token: string | null) => set({ activeSession: token }),
-    setParticipants: (participants: any[]) => set({ participants }),
+    setParticipants: (update: any[] | ((prev: any[]) => any[])) => set((state) => ({
+        participants: typeof update === 'function' ? update(state.participants) : update
+    })),
     updateCursor: (userId: string, position: any) => set((state) => ({
         cursorPositions: { ...state.cursorPositions, [userId]: position }
     })),

@@ -36,7 +36,7 @@ export default function SnippetSearchPage() {
     });
 
     const toggleFilter = (filter: string) => {
-        setActiveFilters(prev =>
+        setActiveFilters((prev: string[]) =>
             prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter]
         );
     };
