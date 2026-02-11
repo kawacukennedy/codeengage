@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -77,6 +77,22 @@ export default function SnippetEditor() {
     const [isResizingRight, setIsResizingRight] = useState(false);
     const [isResizingBottom, setIsResizingBottom] = useState(false);
 
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const highlightRef = useRef<HTMLPreElement>(null);
+
+    useEffect(() => {
+        if (highlightRef.current) {
+            Prism.highlightElement(highlightRef.current.querySelector('code')!);
+        }
+    }, [currentSnippet.code, currentSnippet.language]);
+
+    const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+        if (highlightRef.current) {
+            highlightRef.current.scrollTop = e.currentTarget.scrollTop;
+            highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }
+    };
+
     useEffect(() => {
         // Hide sidebars on mobile by default
         const isMobile = window.innerWidth < 1024;
@@ -125,16 +141,12 @@ export default function SnippetEditor() {
         };
     }, [isResizingLeft, isResizingRight, isResizingBottom]);
 
-    useEffect(() => {
-        Prism.highlightAll();
-    }, [currentSnippet.code, currentSnippet.language]);
-
-    const handleAIExecute = async (customPrompt?: string) => {
-        const prompt = customPrompt || aiInput;
-        if (!prompt.trim() && !customPrompt) return;
+    const handleAIExecute = async (overridePrompt?: string) => {
+        const prompt = overridePrompt || aiInput;
+        if (!prompt && !overridePrompt) return;
 
         setAiInput('');
-        addToast({ title: "Neural Link", message: "Processing your request...", type: "info" });
+        addToast({ title: "Neural Processing", message: "Consulting Sunder AI...", type: "info" });
 
         try {
             const result = await fetchApi('/ai/pair', {
@@ -143,19 +155,15 @@ export default function SnippetEditor() {
                     code: currentSnippet.code,
                     task: prompt,
                     language: currentSnippet.language,
-                    personality: 'educational', // Use educational for companion
+                    personality: 'educational',
                     options: { suggest_improvements: true, explain_changes: true }
                 })
             });
 
             const content = result.response || result.explanation || '';
-            setExecutionResult(`${executionResult || ''}\n\n> NEURAL ENGINE:\n${content}`);
-
-            // Extract code block if present for the "Apply" button
-            const codeMatch = content.match(/```[\s\S]*?\n([\s\S]*?)```/);
             setAiResponse({
                 fullContent: content,
-                code: codeMatch ? codeMatch[1].trim() : (result.suggested_code || undefined)
+                code: result.suggested_code || undefined
             });
 
             addToast({ title: "Neural Response", message: "Companion updated with insights.", type: "success" });
@@ -177,9 +185,9 @@ export default function SnippetEditor() {
                 })
             });
             setExecutionResult(result.output);
-            addToast({ title: "Execution Success", message: `Result returned in ${result.duration}`, type: "success" });
+            addToast({ title: "Execution Success", message: "Runtime results received", type: "success" });
         } catch (error) {
-            setExecutionResult('> ERROR: Execution environment failed to respond.\nPlease check your connectivity or try again later.');
+            setExecutionResult('> ERROR: Execution environment failed to respond.\n');
             addToast({ title: "Runtime Error", message: "Failed to connect to execution engine", type: "error" });
         } finally {
             setIsRunning(false);
@@ -212,6 +220,7 @@ export default function SnippetEditor() {
         { id: 'go', name: 'Go' },
         { id: 'ruby', name: 'Ruby' }
     ];
+
     const handleSave = async () => {
         if (!user) {
             router.push('/auth/login');
@@ -414,41 +423,33 @@ export default function SnippetEditor() {
                                 {currentSnippet.language}
                             </div>
                         </div>
-                        <div className="flex-1 relative overflow-hidden group">
-                            <div className="absolute top-0 left-0 w-12 h-full bg-white/[0.01] pointer-events-none border-r border-white/5 z-10" />
-                            <div className="h-full overflow-auto custom-scrollbar">
+                        <div className="flex-1 relative overflow-hidden group bg-black/20">
+                            <div className="absolute top-0 left-0 w-12 h-full bg-white/[0.01] pointer-events-none border-r border-white/5 z-20" />
+
+                            <div className="absolute inset-0 overflow-hidden custom-scrollbar">
                                 <div className="relative min-h-full p-6 pl-16">
-                                    <div className="grid w-full h-full font-mono text-sm leading-relaxed" style={{ gridTemplateColumns: '1fr' }}>
-                                        <div className="col-start-1 row-start-1 relative">
-                                            <pre
-                                                className={cn(`language-${currentSnippet.language.toLowerCase()} !bg-transparent !m-0 !p-0 pointer-events-none z-0 whitespace-pre-wrap break-all w-full h-full`)}
-                                                aria-hidden="true"
-                                                style={{ margin: 0, padding: 0, border: 'none' }}
-                                            >
-                                                <code
-                                                    className={`language-${currentSnippet.language.toLowerCase()} !bg-transparent !p-0 !m-0 font-mono text-sm leading-relaxed block`}
-                                                    style={{ fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit' }}
-                                                >
-                                                    {currentSnippet.code + (currentSnippet.code.endsWith('\n') ? ' ' : '')}
-                                                </code>
-                                            </pre>
-                                            <textarea
-                                                className="absolute inset-0 w-full h-full bg-transparent m-0 p-0 font-mono text-sm leading-relaxed text-transparent caret-white resize-none focus:outline-none selection:bg-violet-500/30 whitespace-pre-wrap border-none outline-none z-10"
-                                                value={currentSnippet.code}
-                                                onChange={(e) => updateCode(e.target.value)}
-                                                spellCheck={false}
-                                                style={{
-                                                    height: '100%',
-                                                    minHeight: '100%',
-                                                    WebkitTextFillColor: 'transparent',
-                                                    fontFamily: 'inherit',
-                                                    fontSize: 'inherit',
-                                                    lineHeight: 'inherit',
-                                                    overflow: 'hidden'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
+                                    <pre
+                                        ref={highlightRef}
+                                        aria-hidden="true"
+                                        className={cn(
+                                            `language-${currentSnippet.language.toLowerCase()} absolute inset-0 w-full h-full m-0 p-6 pl-16 pointer-events-none overflow-hidden bg-transparent font-mono text-xs md:text-sm leading-relaxed whitespace-pre`,
+                                        )}
+                                    >
+                                        <code className={`language-${currentSnippet.language.toLowerCase()}`}>
+                                            {currentSnippet.code + (currentSnippet.code.endsWith('\n') ? ' ' : '')}
+                                        </code>
+                                    </pre>
+                                    <textarea
+                                        ref={textareaRef}
+                                        value={currentSnippet.code}
+                                        onScroll={handleScroll}
+                                        onChange={(e) => updateCode(e.target.value)}
+                                        spellCheck={false}
+                                        className="absolute inset-0 w-full h-full bg-transparent p-6 pl-16 font-mono text-xs md:text-sm leading-relaxed text-transparent caret-violet-400 focus:outline-none selection:bg-violet-500/30 whitespace-pre border-none outline-none z-10 overflow-auto custom-scrollbar"
+                                        style={{
+                                            WebkitTextFillColor: 'transparent',
+                                        }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -467,7 +468,7 @@ export default function SnippetEditor() {
 
                     {/* Bottom Pane Toggle */}
                     <footer className={cn(
-                        "border-t border-white/5 transition-all duration-300 ease-in-out",
+                        "border-t border-white/5 transition-all duration-300 ease-in-out bg-slate-900",
                         panes.bottom ? "" : "h-10"
                     )} style={{ height: panes.bottom ? bottomHeight : 40 }}>
                         {!panes.bottom ? (
@@ -477,8 +478,8 @@ export default function SnippetEditor() {
                                 </button>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col bg-slate-900">
-                                <div className="px-6 py-3 border-b border-white/5 flex justify-between items-center bg-black/20">
+                            <div className="h-full flex flex-col">
+                                <div className="px-6 py-3 border-b border-white/5 flex justify-between items-center bg-black/20 shrink-0">
                                     <span className="text-xs font-black text-white uppercase italic flex items-center gap-2 tracking-widest">
                                         <Brain size={16} className="text-violet-400" /> Neural Assistant
                                     </span>
@@ -537,7 +538,7 @@ export default function SnippetEditor() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="px-4 py-3 bg-black/40 border-t border-white/5 flex gap-4">
+                                <div className="px-4 py-3 bg-black/40 border-t border-white/5 flex gap-4 shrink-0">
                                     <input
                                         type="text"
                                         placeholder="Ask for magic..."
@@ -557,7 +558,6 @@ export default function SnippetEditor() {
                         )}
                     </footer>
                 </div>
-
                 {/* Right Resizer */}
                 {panes.right && (
                     <div
