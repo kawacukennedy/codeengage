@@ -87,7 +87,7 @@ export default function SnippetEditor() {
                 })
             });
 
-            setExecutionResult((prev) => `${prev}\n\n> NEURAL ENGINE:\n${result.explanation}`);
+            setExecutionResult(`${executionResult || ''}\n\n> NEURAL ENGINE:\n${result.explanation}`);
             addToast({ title: "Analysis Complete", message: "Check the console for insights.", type: "success" });
         } catch (error) {
             addToast({ title: "AI Error", message: "Failed to reach neural engine", type: "error" });
