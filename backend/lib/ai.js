@@ -155,7 +155,7 @@ const callGemini = async (prompt, options = {}, modelOverride = null) => {
                 ],
                 generationConfig: {
                     temperature: options.temperature || 0.7,
-                    maxOutputTokens: options.max_tokens || 2048,
+                    maxOutputTokens: options.max_tokens || 4096,
                 }
             },
             {

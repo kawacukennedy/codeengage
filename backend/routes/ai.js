@@ -79,6 +79,10 @@ router.post('/pair', authenticate, async (req, res) => {
             temperature: personality === 'educational' ? 0.7 : 0.2 // Lower temp for more deterministic code
         });
 
+        // Extracting only the code part for suggested_code
+        const codeMatch = aiResponse.text.match(/```[\s\S]*?\n([\s\S]*?)```/);
+        const extractedCode = codeMatch ? codeMatch[1].trim() : '';
+
         await logAIUsage({
             user_id: req.user.id,
             ai_feature: 'pair',
@@ -90,9 +94,9 @@ router.post('/pair', authenticate, async (req, res) => {
 
         res.json({
             response: aiResponse.text,
-            suggested_code: aiResponse.text + '\n\n// Improved by Sunder AI',
-            explanations: options?.explain_changes ? ['Optimized loop structure', 'Improved memory allocation'] : ['Optimized code structure.'],
-            tests: options?.write_tests ? ['describe("Snippet", () => { ... })', 'it("should handle edge cases", () => { ... })'] : [],
+            suggested_code: extractedCode || (code.trim() ? code : '// No code generated'),
+            explanations: options?.explain_changes ? ['Optimized logic flow', 'Improved structure'] : ['Refined code.'],
+            tests: options?.write_tests ? ['// Generated tests...'] : [],
             conversation_id: `CP_${Math.random().toString(36).substring(7)}`,
             tokens_used: aiResponse.output_tokens
         });

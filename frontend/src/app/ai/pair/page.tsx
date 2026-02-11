@@ -39,7 +39,8 @@ export default function AIPairPage() {
     } = useAIStore();
 
     const [input, setInput] = useState('');
-    const [currentCode, setCurrentCode] = useState('');
+    const [currentCode, setCurrentCode] = useState('// Your neural workspace is ready.\n// Start typing or ask the AI to generate code.\n\nfn main() {\n    println!("Hello, Neural World!");\n}');
+    const [pendingSuggestion, setPendingSuggestion] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -58,8 +59,8 @@ export default function AIPairPage() {
             const response = await pairWithAI(currentInput, currentCode);
             addMessage('assistant', response.response || response.explanation || 'No response received');
 
-            if (response.suggested_code) {
-                setCurrentCode(response.suggested_code);
+            if (response.suggested_code && response.suggested_code !== currentCode) {
+                setPendingSuggestion(response.suggested_code);
             }
         } catch (error) {
             console.error('AI Pair error:', error);
@@ -164,54 +165,81 @@ export default function AIPairPage() {
                     </div>
 
                     {/* Middle: Code Editor Placeholder - Takes full width on mobile */}
-                    <div className="col-span-1 lg:col-span-7 flex flex-col gap-4 md:gap-6">
-                        <div className="flex-1 p-4 sm:p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] bg-slate-900/60 border border-white/5 backdrop-blur-3xl relative group overflow-hidden min-h-[300px] md:min-h-[400px]">
+                    <div className="col-span-1 lg:col-span-7 flex flex-col gap-4 md:gap-6 h-full min-h-[500px] lg:min-h-0">
+                        <div className="flex-1 p-4 sm:p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] bg-slate-900/60 border border-white/5 backdrop-blur-3xl relative group overflow-hidden flex flex-col">
                             <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
-                            <div className="relative z-10 h-full flex flex-col">
-                                <div className="flex items-center gap-2 text-slate-500 mb-4 md:mb-6">
-                                    <FileCode size={16} className="md:w-[18px] md:h-[18px]" />
-                                    <span className="text-[10px] md:text-xs font-mono">src/lib/neural_engine.rs</span>
-                                </div>
-
-                                <div className="flex-1 font-mono text-xs md:text-sm space-y-1 md:space-y-2 opacity-80 select-none overflow-y-auto custom-scrollbar">
-                                    {[
-                                        { l: '01', c: 'use neural::optimizer::*;', t: 'violet' },
-                                        { l: '02', c: '', t: 'slate' },
-                                        { l: '03', c: 'pub struct NeuralEngine {', t: 'violet', val: 'NeuralEngine' },
-                                        { l: '04', c: '    context_window: usize,', t: 'cyan' },
-                                        { l: '05', c: '    learning_rate: f64,', t: 'cyan' },
-                                        { l: '06', c: '}', t: 'violet' },
-                                    ].map((line, i) => (
-                                        <div key={i} className="flex gap-2 md:gap-4">
-                                            <span className="text-slate-700 w-6 md:w-8 text-right shrink-0 text-[10px] md:text-sm">{line.l}</span>
-                                            <span className={cn(
-                                                line.t === 'violet' ? 'text-violet-400' :
-                                                    line.t === 'cyan' ? 'text-cyan-400' : 'text-slate-300'
-                                            )}>{line.c}</span>
-                                        </div>
-                                    ))}
-
-                                    <div className="flex gap-2 md:gap-4 bg-violet-500/10 border-y border-violet-500/20 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-1 mt-2 md:mt-4 animate-in fade-in duration-700">
-                                        <span className="text-violet-500 w-6 md:w-8 text-right shrink-0 text-[10px] md:text-sm">07</span>
-                                        <div className="flex items-center gap-2">
-                                            <Sparkles size={12} className="text-violet-400 md:w-[14px] md:h-[14px]" />
-                                            <span className="text-violet-300 italic text-[10px] md:text-sm">AI is suggesting an implementation for the ForwardProp trait...</span>
-                                        </div>
+                            <div className="relative z-10 flex-1 flex flex-col min-h-0">
+                                <div className="flex items-center justify-between mb-4 md:mb-6">
+                                    <div className="flex items-center gap-2 text-slate-500">
+                                        <FileCode size={16} className="md:w-[18px] md:h-[18px]" />
+                                        <span className="text-[10px] md:text-xs font-mono">neural_workspace.rs</span>
                                     </div>
+                                    {pendingSuggestion && (
+                                        <div className="flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full animate-pulse">
+                                            <Sparkles size={10} className="text-violet-400" />
+                                            <span className="text-[9px] font-black text-violet-400 uppercase tracking-widest">AI Suggestion Pending</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="mt-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-0 pt-4 md:pt-6 border-t border-white/5">
+                                <div className="flex-1 relative min-h-0">
+                                    <textarea
+                                        value={pendingSuggestion || currentCode}
+                                        onChange={(e) => {
+                                            if (pendingSuggestion) {
+                                                // If they type while suggestion is active, we discard suggestion or merge. 
+                                                // For simplicity, let's say they're editing the suggestion if they type.
+                                                setPendingSuggestion(null);
+                                            }
+                                            setCurrentCode(e.target.value);
+                                        }}
+                                        spellCheck={false}
+                                        className={cn(
+                                            "w-full h-full bg-transparent font-mono text-xs md:text-sm text-slate-300 outline-none resize-none custom-scrollbar leading-relaxed selection:bg-violet-500/30",
+                                            pendingSuggestion && "text-violet-300/60 italic"
+                                        )}
+                                    />
+                                    {pendingSuggestion && (
+                                        <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
+                                            <div className="px-4 py-2 bg-slate-900/80 border border-white/10 rounded-2xl backdrop-blur-md shadow-2xl flex items-center gap-4 pointer-events-auto animate-in slide-in-from-bottom-4 duration-300">
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Apply Suggested Changes?</p>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setPendingSuggestion(null)}
+                                                        className="px-3 py-1 rounded-lg bg-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-white"
+                                                    >
+                                                        Discard
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setCurrentCode(pendingSuggestion);
+                                                            setPendingSuggestion(null);
+                                                        }}
+                                                        className="px-3 py-1 rounded-lg bg-violet-600 text-white text-[9px] font-black uppercase tracking-widest"
+                                                    >
+                                                        Accept (Tab)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-4 md:mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-0 pt-4 md:pt-6 border-t border-white/5">
                                     <div className="flex items-center gap-3 md:gap-4 text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                                        <div className="flex items-center gap-1.5"><Activity size={10} className="md:w-3 md:h-3" /> Syncing</div>
-                                        <div className="flex items-center gap-1.5"><Command size={10} className="md:w-3 md:h-3" /> Shortcuts</div>
+                                        <div className="flex items-center gap-1.5"><Activity size={10} className="md:w-3 md:h-3" /> {currentCode.length} bytes</div>
+                                        <div className="flex items-center gap-1.5"><Command size={10} className="md:w-3 md:h-3" /> Shortcuts Active</div>
                                     </div>
                                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                                        <button className="flex-1 sm:flex-none px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-white/5 text-slate-400 text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:text-white transition-all">
-                                            Reject <span className="hidden sm:inline">(Esc)</span>
+                                        <button
+                                            onClick={() => setCurrentCode('')}
+                                            className="flex-1 sm:flex-none px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-white/5 text-slate-400 text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:text-white transition-all"
+                                        >
+                                            Clear
                                         </button>
                                         <button className="flex-1 sm:flex-none px-4 md:px-6 py-1.5 md:py-2 rounded-xl bg-violet-600 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-violet-500/20 hover:scale-105 transition-all">
-                                            Accept <span className="hidden sm:inline">(Tab)</span>
+                                            Export
                                         </button>
                                     </div>
                                 </div>
@@ -220,9 +248,9 @@ export default function AIPairPage() {
                     </div>
 
                     {/* Right: Neural Chat Interface - Full width on mobile, sidebar on lg+ */}
-                    <div className="col-span-1 lg:col-span-3 flex flex-col gap-4 md:gap-6">
-                        <div className="flex-1 p-4 md:p-6 rounded-[2rem] md:rounded-[3rem] bg-slate-900/40 border border-white/5 backdrop-blur-xl flex flex-col relative group min-h-[400px] md:min-h-[500px] lg:overflow-hidden">
-                            <div className="space-y-4 md:space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4 md:pb-6">
+                    <div className="col-span-1 lg:col-span-3 flex flex-col gap-4 md:gap-6 min-h-[500px] lg:min-h-0">
+                        <div className="flex-1 p-4 md:p-6 rounded-[2rem] md:rounded-[3rem] bg-slate-900/40 border border-white/5 backdrop-blur-xl flex flex-col relative group overflow-hidden">
+                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-24 md:pb-32">
                                 {history.length === 0 && (
                                     <div className="h-full flex flex-col items-center justify-center text-center p-6 md:p-8 space-y-3 md:space-y-4 opacity-40">
                                         <Cpu size={32} className="text-violet-400 md:w-10 md:h-10" />
