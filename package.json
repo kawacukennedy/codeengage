@@ -1,0 +1,28 @@
+{
+    "name": "sunder",
+    "version": "1.0.0",
+    "description": "AI-powered collaborative platform for code snippets",
+    "private": true,
+    "scripts": {
+        "prepare": "husky install",
+        "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+        "format": "prettier --write .",
+        "test": "npm run test --prefix frontend && npm run test --prefix backend",
+        "dev:mock-ai": "node scripts/mock-ai-server.js"
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^19.3.0",
+        "@commitlint/config-conventional": "^19.2.2",
+        "husky": "^9.0.11",
+        "lint-staged": "^15.2.5"
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md,yml}": [
+            "prettier --write"
+        ]
+    }
+}

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # PostgreSQL (Database)
+  postgres:
+    image: postgres:15-alpine
+    container_name: sunder-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sunder
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./scripts/db/seeds.sql:/docker-entrypoint-initdb.d/2-seeds.sql
+
+  # Redis (Cache & Real-time)
+  redis:
+    image: redis:7-alpine
+    container_name: sunder-cache
+    ports:
+      - "6379:6379"
+
+  # Mock AI Server
+  mock-ai:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mock-ai
+    container_name: sunder-mock-ai
+    ports:
+      - "3002:3002"
+    environment:
+      MOCK_AI_PORT: 3002
+
+volumes:
+  postgres_data:

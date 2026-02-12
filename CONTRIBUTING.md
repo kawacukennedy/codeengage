@@ -1,56 +1,103 @@
 # Contributing to Sunder
 
-First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create.
+First off, thank you for considering contributing to Sunder! It's people like you who make Sunder a great tool for everyone.
+
+This guide will walk you through the process of setting up your development environment and submitting your first contribution.
+
+---
 
 ## 📋 Code of Conduct
 
-Help us keep Sunder open and inclusive. Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating in this project, you agree to abide by our **[Code of Conduct](CODE_OF_CONDUCT.md)**. Please report any unacceptable behavior to [conduct@sunder.app].
 
-## 🚀 How Can I Contribute?
+## 🛠️ Getting Started
 
-### Reporting Bugs
-- Use the GitHub issue tracker.
-- Check if the bug has already been reported.
-- Use a clear and descriptive title.
-- Describe the exact steps to reproduce the problem.
+### Prerequisites
 
-### Suggesting Enhancements
-- Check if the enhancement has already been suggested.
-- Explain why this enhancement would be useful.
+- **Node.js**: v18 or higher.
+- **Docker & Docker Compose**: For running the database, cache, and mock services.
+- **Git**: For version control.
+- **Supabase CLI** (Optional but recommended): For database migrations.
 
-### Pull Requests
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code follows the existing style (we use Prettier/ESLint).
+### Local Development Setup
 
-## 💻 Development Workflow
+1. **Fork the Repository**: Create a fork of the `sunder` repository to your own GitHub account.
+2. **Clone your Fork**:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/sunder.git
+   cd sunder
+   ```
+3. **Environment Variables**:
+   Copy the `.env.example` file to `.env` in both the root, `frontend/`, and `backend/` directories.
+   ```bash
+   cp .env.example .env
+   # Ensure you configure necessary keys if not using mocks
+   ```
+4. **Spin up Dependencies**:
+   Use Docker Compose to start PostgreSQL, Redis, and the Mock AI server.
+   ```bash
+   docker-compose up -d
+   ```
+5. **Install Dependencies**:
+   ```bash
+   # Root
+   npm install
+   # Frontend
+   cd frontend && npm install
+   # Backend
+   cd ../backend && npm install
+   ```
+6. **Start Development Servers**:
+   ```bash
+   # Frontend (from frontend/)
+   npm run dev
+   # Backend (from backend/)
+   npm run dev
+   ```
 
-### Branching Strategy
-- `main`: Production-ready code.
-- `develop`: Ongoing development.
-- `feature/*`: New features.
-- `bugfix/*`: Bug fixes.
+---
 
-### Commit Messages
-- Use the [Conventional Commits](https://www.conventionalcommits.org/) specification.
-- Example: `feat: add AI snippet translation support` or `fix: resolve websocket connection leak`.
+## 🌿 Branching & Commits
 
-## 🎨 Style Guidelines
+### Branch Naming Convention
 
-### JavaScript/TypeScript
-- Use arrow functions for components.
-- Prefer functional components over class components.
-- Use descriptive variable and function names.
+Always create a new branch for your work. We use the following prefixes:
+- `feat/`: New features (e.g., `feat/monaco-integration`)
+- `fix/`: Bug fixes (e.g., `fix/auth-leak`)
+- `docs/`: Documentation changes (e.g., `docs/api-update`)
+- `refactor/`: Code refactoring without behavior changes.
+- `perf/`: Performance improvements.
 
-### Styling
-- Use Tailwind CSS for most styling.
-- Use CSS Modules for complex component-specific styles.
+### Conventional Commits
 
-## 🛠️ Tooling
-- **Frontend**: ESLint, Prettier, TypeScript.
-- **Backend**: JSDoc for API documentation.
+We strictly follow the **[Conventional Commits](https://www.conventionalcommits.org/)** specification. 
+Example: `feat(editor): add neural auto-save indicator`
 
-## ❓ Questions?
-If you have any questions, feel free to open an issue or reach out to the maintainers.
+---
+
+## 🚀 Pull Request Process
+
+1. **Keep it Small**: Focus on one feature or bug fix per PR.
+2. **Update Tests**: Include unit tests for any new logic.
+3. **Link Issues**: Reference the issue your PR resolves (e.g., `Closes #123`).
+4. **Status Checks**: Ensure all CI checks (lint, test, build) pass.
+5. **Review**: At least one maintainer must approve the PR before merging.
+
+## 🧪 Testing
+
+- **Unit Tests**: `npm test`
+- **End-to-End**: We use Playwright for E2E. Run `npm run test:e2e`.
+- **Linting**: We enforce ESLint and Prettier rules. Run `npm run lint`.
+
+## 🎨 Style Guide
+
+- Use **Functional Components** with hooks for React.
+- Follow **Atomic Design** principles for UI components.
+- Use **Tailwind CSS** for styling.
+- Ensure all public functions have **JSDoc/TSDoc** comments.
+
+---
+
+## ❓ Need Help?
+
+Feel free to open a **[Discussion](https://github.com/kawacukennedy/sunder/discussions)** or join our **[Discord](https://discord.gg/sunder)**!

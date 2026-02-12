@@ -1,74 +1,64 @@
-# Sunder
+<div align="center">
+  <img src="https://raw.githubusercontent.com/kawacukennedy/sunder/main/public/logo.png" width="120" alt="Sunder Logo" />
+  <h1>Sunder</h1>
+  <p><strong>AI‑powered collaborative platform for code snippets</strong></p>
+</div>
 
-An AI-powered collaborative platform for saving, sharing, discovering, and transforming code snippets with advanced intelligence, real-time collaboration, and developer productivity features.
+<p align="center">
+  <img src="https://img.shields.io/github/license/kawacukennedy/sunder?style=for-the-badge&color=8A2BE2" alt="License" />
+  <img src="https://img.shields.io/github/v/release/kawacukennedy/sunder?style=for-the-badge&color=00BFFF" alt="Release" />
+  <img src="https://img.shields.io/github/actions/workflow/status/kawacukennedy/sunder/ci.yml?branch=main&style=for-the-badge" alt="CI Status" />
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge" alt="PRs Welcome" />
+</p>
 
-## 🚀 Vision
+---
 
-Sunder combines AI-paired programming, real-time collaborative editing, code translation across languages, and automated educational content generation into a unified platform that learns from your coding style and makes every developer more productive.
+**Sunder** is a next-generation platform designed to sunder the barriers between writing, sharing, and understanding code. Leveraging advanced AI, it transforms static snippets into dynamic, collaborative assets that can be translated, analyzed, and pair-programmed in real-time.
+
+## ✨ Key Features
+
+- 🧠 **Neural Analysis**: Instant AI insights into security, performance, and readability.
+- 🌐 **Global Translation**: Sundering language barriers—translate code snippets between 20+ languages instantly.
+- 🤝 **Real-time Collaboration**: WebSocket-powered "rooms" for live code pairing and reviews.
+- 🔐 **Security First**: Hybrid PIN-based authentication for high-sensitivity actions.
+- ⚡ **Lightning Fast**: Built on Next.js 14 and Express for sub-millisecond responsiveness.
+
+## 🚀 Quick Start
+
+### Using Docker (Recommended)
+```bash
+git clone https://github.com/kawacukennedy/sunder.git
+cd sunder
+docker-compose up -d
+```
+
+### Manual Setup
+1. **Frontend**: `cd frontend && npm install && npm run dev`
+2. **Backend**: `cd backend && npm install && npm run dev`
+
+> [!TIP]
+> Use our **Mock AI Server** during development to skip Gemini API key requirements!
+> `npm run dev:mock-ai`
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **State Management**: Zustand (Client) & React Query (Server)
-- **Styling**: Tailwind CSS
-- **Deployment**: Vercel
-
-### Backend
-- **Runtime**: Node.js 18
-- **Framework**: Express.js
-- **Real-time**: WebSockets
-- **Deployment**: Render
-
-### Data & Services
-- **Database**: PostgreSQL (via Supabase)
-- **Object Storage**: Supabase Storage
-- **Caching**: Redis
-- **AI**: Gemini API / Vertex AI
+- **Frontend**: Next.js 14, Zustand, React Query, Tailwind CSS, Monaco Editor.
+- **Backend**: Node.js, Express, Supabase (PostgreSQL), Redis.
+- **Intelligence**: Google Gemini API, Piston Code Execution.
 
 ## 📂 Project Structure
 
-- `frontend/`: Next.js frontend application.
-- `backend/`: Express.js backend API.
-- `database/`: SQL scripts and schema definitions.
-- `specs.json`: Detailed project specifications and requirements.
+- `frontend/`: Next.js application.
+- `backend/`: Express.js API (logic in `src/`).
+- `docs/`: Architecture and API references.
+- `scripts/`: Development tools and DB migrations.
 
-## 🏁 Quick Start
+## 🤝 Contributing
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Supabase account (for DB and Storage)
-- Redis instance
+We love contributors! Please see our **[CONTRIBUTING.md](CONTRIBUTING.md)** for detailed setup instructions and our **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** for our community standards.
 
-### Setup
+## 📄 License & Acknowledgements
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd sunder
-   ```
+Sunder is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
 
-2. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-3. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   npm run start
-   ```
-
-## 📄 Documentation
-
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [API Reference](docs/API_REFERENCE.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-
-## ⚖️ License
-
-[MIT License](LICENSE)
+Special thanks to the open-source community and the AI researchers whose work makes Sunder possible.

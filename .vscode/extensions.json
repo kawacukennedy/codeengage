@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "christian-kohler.npm-intellisense",
+        "editorconfig.editorconfig",
+        "orta.vscode-jest",
+        "ms-vscode.vscode-typescript-next"
+    ]
+}

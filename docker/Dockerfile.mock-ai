@@ -1,0 +1,11 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY scripts/mock-ai-server.js .
+
+RUN npm init -y && npm install express
+
+EXPOSE 3002
+
+CMD ["node", "mock-ai-server.js"]
