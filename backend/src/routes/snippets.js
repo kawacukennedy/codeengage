@@ -143,6 +143,62 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 /**
+ * @route GET /snippets/my
+ * @desc Fetches all snippets authored by the current user.
+ * @access Private
+ */
+router.get('/my', authenticate, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('snippets')
+            .select('*')
+            .eq('author_id', req.user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * @route GET /snippets/:id
+ * @desc Fetches a single snippet by ID with author details and comment count.
+ * @access Public (for public snippets) / Private (for private snippets)
+ */
+router.get('/:id', async (req, res) => {
+    try {
+        const { data: snippet, error } = await supabase
+            .from('snippets')
+            .select('*, author:author_id(id, username, display_name, avatar_url)')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !snippet) {
+            return res.status(404).json({ error: 'Snippet not found' });
+        }
+
+        // Fetch comments for this snippet
+        const { data: comments } = await supabase
+            .from('snippet_comments')
+            .select('*, user:user_id(username, avatar_url)')
+            .eq('snippet_id', req.params.id)
+            .order('created_at', { ascending: true });
+
+        // Increment view count
+        await supabase.rpc('increment_view_count', { snippet_id: req.params.id }).catch(() => {});
+
+        res.json({
+            ...snippet,
+            comments: comments || []
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * @route PATCH /snippets/:id
  * @desc Updates an existing snippet (author only).
  * @access Private
@@ -322,6 +378,47 @@ router.get('/:id/versions', async (req, res) => {
         if (error) throw error;
         res.json(data);
     } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+/**
+ * @route DELETE /snippets/:id
+ * @desc Deletes a snippet (author only).
+ * @access Private
+ */
+router.delete('/:id', authenticate, async (req, res) => {
+    try {
+        const { data: snippet, error: fetchError } = await supabase
+            .from('snippets')
+            .select('author_id')
+            .eq('id', req.params.id)
+            .single();
+
+        if (fetchError || !snippet) {
+            return res.status(404).json({ error: 'Snippet not found' });
+        }
+
+        if (snippet.author_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only delete your own snippets' });
+        }
+
+        const { error } = await supabase
+            .from('snippets')
+            .delete()
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+
+        await logAudit({
+            actor_id: req.user.id,
+            action_type: 'delete_snippet',
+            entity_type: 'snippet',
+            entity_id: req.params.id
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 module.exports = router;

@@ -128,6 +128,58 @@ router.post('/pair', authenticate, async (req, res) => {
 });
 
 /**
+ * @route POST /ai/explain
+ * @desc Provides a natural language explanation of the provided code.
+ * @access Private
+ */
+router.post('/explain', authenticate, async (req, res) => {
+    const { code, detail_level = 'detailed' } = req.body;
+    try {
+        const platformContext = 'You are Sunder AI, the integrated neural co-pilot for the Sunder developer platform.';
+
+        const detailPrompts = {
+            brief: 'Provide a concise, 2-3 sentence summary of what this code does.',
+            detailed: 'Provide a thorough explanation of this code, including its purpose, how it works step-by-step, and any notable patterns or techniques used.',
+            educational: 'Explain this code as if teaching a junior developer. Cover the purpose, each major section, the design patterns used, and suggest improvements or further reading.'
+        };
+
+        const detailInstruction = detailPrompts[detail_level] || detailPrompts.detailed;
+
+        const prompt = `${platformContext}\n\n${detailInstruction}\n\nAlso identify the key concepts and programming patterns used in this code, and estimate a complexity score from 1 (trivial) to 100 (highly complex).\n\nCode:\n\`\`\`\n${code}\n\`\`\`\n\nRespond in this exact JSON format:\n{"explanation": "...", "key_concepts": ["concept1", "concept2"], "complexity_score": 50}`;
+
+        const aiResponse = await callGemini(prompt, { response_format: 'json' });
+
+        await logAIUsage({
+            user_id: req.user.id,
+            ai_feature: 'explain',
+            input_tokens: aiResponse.input_tokens,
+            output_tokens: aiResponse.output_tokens,
+            model_used: aiResponse.model_used,
+            request_duration_ms: aiResponse.duration
+        });
+
+        // Try to parse structured JSON from AI response
+        let parsed;
+        try {
+            const jsonMatch = aiResponse.text.match(/\{[\s\S]*\}/);
+            parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        } catch (e) {
+            parsed = null;
+        }
+
+        res.json({
+            explanation: parsed?.explanation || aiResponse.text,
+            key_concepts: parsed?.key_concepts || [],
+            complexity_score: parsed?.complexity_score || 50,
+            detail_level,
+            tokens_used: aiResponse.output_tokens
+        });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: 'Explanation failed' });
+    }
+});
+
+/**
  * @route POST /ai/analyze
  * @desc Performs deep neural analysis of code for security and performance.
  * @access Private/Admin
