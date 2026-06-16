@@ -60,6 +60,7 @@ def main():
     mqtt_client = mqtt.Client()
     mqtt_client.on_connect = on_mqtt_connect
     mqtt_client.on_disconnect = on_mqtt_disconnect
+    mqtt_client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     ser = None
     mqtt_connected = False
