@@ -10,8 +10,12 @@ NC='\033[0m'
 
 echo -e "${YELLOW}[1/5]${NC} Checking git repository..."
 if [ ! -d .git ]; then
-    git init
-    echo -e "${GREEN}  -> Initialized new git repository${NC}"
+    git init -b main
+    echo -e "${GREEN}  -> Initialized new git repository (branch: main)${NC}"
+fi
+
+if [ "$(git branch --show-current)" != "main" ]; then
+    git branch -m main 2>/dev/null || true
 fi
 
 echo -e "${YELLOW}[2/5]${NC} Setting remote origin..."
@@ -27,7 +31,7 @@ echo -e "${YELLOW}[4/5]${NC} Committing..."
 git commit -m "$COMMIT_MSG" 2>/dev/null || echo -e "  -> Nothing new to commit (already up to date)"
 
 echo -e "${YELLOW}[5/5]${NC} Pushing to main..."
-git push -u origin main
+git push -f -u origin main
 
 echo ""
 echo -e "${GREEN}=== Push complete ===${NC}"
