@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Monitor - RCA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js">
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 48px 56px;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #8892b0;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #5a6482;
+            margin-bottom: 32px;
+        }
+        .temperature {
+            font-size: 88px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+            margin: 16px 0;
+            transition: color 0.5s ease;
+        }
+        .temperature .unit {
+            font-size: 36px;
+            color: #64ffda;
+            vertical-align: super;
+        }
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 24px 0 16px;
+            font-size: 13px;
+            color: #8892b0;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.connected { background: #64ffda; box-shadow: 0 0 8px #64ffda; }
+        .status-dot.disconnected { background: #ff5555; box-shadow: 0 0 8px #ff5555; }
+        .status-dot.connecting { background: #f1fa8c; box-shadow: 0 0 8px #f1fa8c; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .last-update {
+            font-size: 12px;
+            color: #5a6482;
+            margin-top: 8px;
+        }
+        .topic-badge {
+            display: inline-block;
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 11px;
+            color: #64ffda;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            margin-top: 24px;
+        }
+        .placeholder {
+            color: #5a6482;
+            font-size: 88px;
+            font-weight: 700;
+        }
+        .error-text {
+            color: #ff5555;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        @media (max-width: 480px) {
+            .card { padding: 32px 24px; }
+            .temperature { font-size: 64px; }
+            .temperature .unit { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="title">Live Temperature Monitor</div>
+        <div class="subtitle">KAWACU RUGIRANEZA Arnaud Kennedy</div>
+
+        <div id="tempDisplay" class="placeholder">--.-</div>
+        <div style="font-size:18px;color:#8892b0;margin-top:-8px;">
+            degrees <span style="color:#64ffda;">Celsius</span>
+        </div>
+
+        <div class="status-row">
+            <span class="status-dot connecting" id="statusDot"></span>
+            <span id="statusText">Connecting...</span>
+        </div>
+
+        <div class="last-update" id="lastUpdate">Waiting for data...</div>
+        <div class="topic-badge">rca/year2c/kawacu/temperature</div>
+        <div class="error-text" id="errorMsg" style="display:none;"></div>
+    </div>
+
+    <script>
+        (function() {
+            var brokerHost = "broker.benax.rw";
+            var brokerPort = 9001;
+            var brokerPath = "/ws";
+            var mqttTopic = "rca/year2c/kawacu/temperature";
+
+            var tempDisplay = document.getElementById("tempDisplay");
+            var statusDot = document.getElementById("statusDot");
+            var statusText = document.getElementById("statusText");
+            var lastUpdate = document.getElementById("lastUpdate");
+            var errorMsg = document.getElementById("errorMsg");
+
+            function setStatus(state, text) {
+                statusDot.className = "status-dot " + state;
+                statusText.textContent = text;
+            }
+
+            function showError(msg) {
+                errorMsg.textContent = msg;
+                errorMsg.style.display = "block";
+            }
+
+            function hideError() {
+                errorMsg.style.display = "none";
+            }
+
+            var clientId = "dashboard_" + Math.random().toString(36).substring(2, 10);
+            var client = new Paho.MQTT.Client(brokerHost, Number(brokerPort), brokerPath, clientId);
+
+            client.onConnectionLost = function(response) {
+                setStatus("disconnected", "Disconnected — " + response.errorMessage);
+                tempDisplay.className = "placeholder";
+                tempDisplay.textContent = "--.-";
+            };
+
+            client.onMessageArrived = function(message) {
+                var payload = message.payloadString.trim();
+                var temp = parseFloat(payload);
+                if (!isNaN(temp)) {
+                    tempDisplay.className = "temperature";
+                    tempDisplay.innerHTML = temp.toFixed(1) + '<span class="unit">°C</span>';
+                    var now = new Date();
+                    var ts = now.toLocaleString();
+                    lastUpdate.textContent = "Last update: " + ts;
+                    hideError();
+                } else {
+                    showError("Invalid data: " + payload);
+                }
+            };
+
+            function connect() {
+                setStatus("connecting", "Connecting...");
+                client.connect({
+                    onSuccess: function() {
+                        setStatus("connected", "Connected to " + brokerHost);
+                        client.subscribe(mqttTopic);
+                        hideError();
+                    },
+                    onFailure: function(err) {
+                        setStatus("disconnected", "Connection failed");
+                        showError("Could not connect to " + brokerHost + ":" + brokerPort + " — " +
+                            err.errorMessage);
+                        setTimeout(connect, 5000);
+                    },
+                    useSSL: false,
+                    timeout: 5,
+                    keepAliveInterval: 30,
+                    cleanSession: true,
+                });
+            }
+
+            connect();
+        })();
+    </script>
+</body>
+</html>
