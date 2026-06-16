@@ -2,6 +2,7 @@
 
 **Candidate:** KAWACU RUGIRANEZA Arnaud Kennedy
 **GitHub:** https://github.com/kawacukennedy/temperature_mqtt_final.git
+**Live Dashboard:** http://157.173.101.159:8310/dashboard.html
 
 ---
 
@@ -118,7 +119,7 @@ No build step required — serve it directly with any HTTP server.
 SSH into the VPS and scan for an available port between 8000–9000:
 
 ```bash
-ssh [vps_user]@157.173.101.159
+ssh user246@157.173.101.159
 for port in $(shuf -i 8000-9000); do
     if ! ss -tuln | grep -q ":$port "; then
         echo "Free port: $port"
@@ -127,24 +128,24 @@ for port in $(shuf -i 8000-9000); do
 done
 ```
 
-Replace `[vps_user]` with your VPS username (e.g. `user252`).
+Replace `user246` with your VPS username (e.g. `user246`).
 
 ### Step 2 — Create the target directory
 
 ```bash
-ssh [vps_user]@157.173.101.159 "mkdir -p /home/[vps_user]/examination"
+ssh user246@157.173.101.159 "mkdir -p /home/user246/examination"
 ```
 
 ### Step 3 — Upload the dashboard
 
 ```bash
-scp vps/dashboard.html [vps_user]@157.173.101.159:/home/[vps_user]/examination/
+scp vps/dashboard.html user246@157.173.101.159:/home/user246/examination/
 ```
 
 ### Step 4 — Start the HTTP server in the background
 
 ```bash
-ssh [vps_user]@157.173.101.159 "cd /home/[vps_user]/examination && nohup python3 -m http.server [FREE_PORT] > server.log 2>&1 &"
+ssh user246@157.173.101.159 "cd /home/user246/examination && nohup python3 -m http.server [FREE_PORT] > server.log 2>&1 &"
 ```
 
 Replace `[FREE_PORT]` with the port number found in Step 1.
@@ -185,7 +186,7 @@ It will:
 | DHT11 data pin                  | Digital 2                                              |
 | LCD I2C address                 | Auto-detected (0x27 / 0x3F)                            |
 | VPS address                     | `157.173.101.159`                                      |
-| VPS target directory            | `/home/[vps_user]/examination`                          |
+| VPS target directory            | `/home/user246/examination`                          |
 | Live dashboard URL              | `http://157.173.101.159:[PORT]/dashboard.html`          |
 | GitHub repository               | https://github.com/kawacukennedy/temperature_mqtt_final.git |
 
