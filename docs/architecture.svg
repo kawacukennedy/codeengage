@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 340" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <linearGradient id="ard" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00979D"/><stop offset="100%" stop-color="#007B80"/></linearGradient>
+    <linearGradient id="py" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3776AB"/><stop offset="100%" stop-color="#2B5E8A"/></linearGradient>
+    <linearGradient id="mq" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF6600"/><stop offset="100%" stop-color="#CC5200"/></linearGradient>
+    <linearGradient id="web" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366F1"/><stop offset="100%" stop-color="#4F46E5"/></linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1a2e"/><stop offset="100%" stop-color="#0f0f1a"/></linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#64ffda"/>
+    </marker>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="340" rx="16" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="550" y="38" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" letter-spacing="2">SYSTEM ARCHITECTURE</text>
+  <line x1="200" y1="48" x2="900" y2="48" stroke="#ffffff12" stroke-width="1"/>
+
+  <!-- Block 1: DHT11 -->
+  <rect x="30" y="80" width="140" height="80" rx="12" fill="#ffffff08" stroke="#64ffda44" stroke-width="1.5"/>
+  <text x="100" y="115" text-anchor="middle" fill="#64ffda" font-size="11" font-weight="700" letter-spacing="1">DHT11</text>
+  <text x="100" y="135" text-anchor="middle" fill="#94a3b8" font-size="10">Temperature Sensor</text>
+  <text x="100" y="150" text-anchor="middle" fill="#64748b" font-size="9">Pin D2</text>
+
+  <!-- Arrow 1 -->
+  <line x1="170" y1="120" x2="210" y2="120" stroke="#64ffda" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="190" y="113" text-anchor="middle" fill="#64748b" font-size="8">analog</text>
+
+  <!-- Block 2: Arduino Uno -->
+  <rect x="220" y="70" width="180" height="100" rx="12" fill="url(#ard)" filter="url(#glow)"/>
+  <text x="310" y="105" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Arduino Uno</text>
+  <text x="310" y="122" text-anchor="middle" fill="#e0f2fe" font-size="9">firmware.ino</text>
+  <text x="310" y="140" text-anchor="middle" fill="#b2dfdb" font-size="9">16×2 I2C LCD</text>
+  <text x="310" y="155" text-anchor="middle" fill="#b2dfdb" font-size="9">(scrolling name + temp)</text>
+
+  <!-- Arrow 2 -->
+  <line x1="400" y1="120" x2="450" y2="120" stroke="#64ffda" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="425" y="113" text-anchor="middle" fill="#64748b" font-size="8">USB 9600 baud</text>
+
+  <!-- Block 3: Python Gateway -->
+  <rect x="460" y="70" width="170" height="100" rx="12" fill="url(#py)" filter="url(#glow)"/>
+  <text x="545" y="105" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Python Gateway</text>
+  <text x="545" y="122" text-anchor="middle" fill="#e0f2fe" font-size="9">monitor.py</text>
+  <text x="545" y="140" text-anchor="middle" fill="#b2dfdb" font-size="9">Auto-detect → Serial</text>
+  <text x="545" y="155" text-anchor="middle" fill="#b2dfdb" font-size="9">Parse → MQTT Publish</text>
+
+  <!-- Arrow 3 -->
+  <line x1="630" y1="120" x2="680" y2="120" stroke="#64ffda" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="655" y="113" text-anchor="middle" fill="#64748b" font-size="8">MQTT</text>
+
+  <!-- Block 4: MQTT Broker -->
+  <rect x="690" y="70" width="170" height="100" rx="12" fill="url(#mq)" filter="url(#glow)"/>
+  <text x="775" y="105" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">MQTT Broker</text>
+  <text x="775" y="122" text-anchor="middle" fill="#fff2e0" font-size="9">broker.benax.rw</text>
+  <text x="775" y="140" text-anchor="middle" fill="#ffd699" font-size="9">Port 1883 (MQTT)</text>
+  <text x="775" y="155" text-anchor="middle" fill="#ffd699" font-size="9">Port 9001 (WebSocket)</text>
+
+  <!-- Arrow 4 down -->
+  <line x1="775" y1="170" x2="775" y2="210" stroke="#64ffda" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="790" y="195" fill="#64748b" font-size="8">WebSocket</text>
+
+  <!-- Block 5: VPS Dashboard -->
+  <rect x="690" y="220" width="170" height="90" rx="12" fill="url(#web)" filter="url(#glow)"/>
+  <text x="775" y="252" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Web Dashboard</text>
+  <text x="775" y="269" text-anchor="middle" fill="#e0e7ff" font-size="9">dashboard.html</text>
+  <text x="775" y="286" text-anchor="middle" fill="#c7d2fe" font-size="9">Paho.js → Live Temp</text>
+
+  <!-- Topic label -->
+  <rect x="30" y="220" width="600" height="90" rx="12" fill="#ffffff06" stroke="#ffffff08" stroke-width="1"/>
+  <text x="50" y="252" fill="#94a3b8" font-size="10" font-weight="600">MQTT Topic</text>
+  <rect x="50" y="262" width="300" height="28" rx="6" fill="#64ffda10" stroke="#64ffda22" stroke-width="1"/>
+  <text x="200" y="281" text-anchor="middle" fill="#64ffda" font-size="11" font-family="'SF Mono', monospace">rca/year2c/kawacu/temperature</text>
+
+  <!-- Bottom legend -->
+  <line x1="50" y1="325" x2="1050" y2="325" stroke="#ffffff08" stroke-width="1"/>
+  <text x="100" y="330" text-anchor="middle" fill="#64748b" font-size="8">DHT11</text>
+  <text x="310" y="330" text-anchor="middle" fill="#64748b" font-size="8">Arduino Uno</text>
+  <text x="545" y="330" text-anchor="middle" fill="#64748b" font-size="8">PC  (macOS)</text>
+  <text x="775" y="330" text-anchor="middle" fill="#64748b" font-size="8">VPS  157.173.101.159</text>
+  <text x="1050" y="330" text-anchor="middle" fill="#64748b" font-size="8">Browser</text>
+</svg>

@@ -8,19 +8,7 @@
 
 ## Architecture
 
-```
- DHT11                    Arduino Uno                          Python Gateway                    MQTT                      Web Dashboard
- Sensor                   ┌──────────────────┐                (monitor.py)                     Broker                     
-──────────                │  firmware.ino    │                ┌──────────────┐           ┌──────────────┐           ┌──────────────────┐
- Temp ──────► Digital 2   │                  │  USB Serial   │ Auto-detect   │   MQTT    │              │  WS      │ dashboard.html   │
- (Pin D2)                 │  16x2 I2C LCD    │──────────────►│ Arduino port  │──────────►│ broker.benax │◄─────────│ (live web UI)   │
-                          │  (scrolling name │   9600 baud   │ Parse temp    │  publish  │     .rw      │ subscribe │                  │
-                          │   + temp display)│               │ Publish MQTT  │   topic:  │              │          │ served via       │
-                          └──────────────────┘               └──────────────┘    rca/    └──────────────┘          │ http.server on   │
-                                                                                  year2c/                          │ VPS [free_port]  │
-                                                                                  kawacu/                          └──────────────────┘
-                                                                                  temperature
-```
+![System Architecture](docs/architecture.svg)
 
 | Layer            | Technology                                      |
 |------------------|-------------------------------------------------|
